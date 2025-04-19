@@ -12,8 +12,7 @@ const CategorySchema = new mongoose.Schema(
   }
 );
 
-CategorySchema.index({ Categoryname: 1 });
-CategorySchema.createIndexes();
+
 
 const CategoryModel = mongoose.model("category", CategorySchema);
 module.exports = CategoryModel;

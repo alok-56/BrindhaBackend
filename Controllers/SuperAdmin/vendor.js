@@ -18,7 +18,8 @@ const GetVendorList = async (req, res, next) => {
     // Get total documents for pagination
     const totalVendors = await VendorModel.countDocuments(query);
 
-    const vendors = await VendorModel.find(query).populate("CompanyId")
+    const vendors = await VendorModel.find(query)
+      .populate("CompanyId")
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 })
@@ -45,7 +46,7 @@ const GetVendorById = async (req, res, next) => {
   try {
     let { id } = req.params;
 
-    let vendor = await VendorModel.findById(id).populate("CompanyId")
+    let vendor = await VendorModel.findById(id).populate("CompanyId");
 
     return res.status(200).json({
       status: true,
@@ -61,6 +62,7 @@ const GetVendorById = async (req, res, next) => {
 const ApproveRejectvendor = async (req, res, next) => {
   try {
     let { id, status } = req.params;
+    let { remarks } = req.query;
     let vendor = await VendorModel.findById(id);
 
     if (!vendor) {
@@ -75,11 +77,13 @@ const ApproveRejectvendor = async (req, res, next) => {
       await CompanyModel.findByIdAndUpdate(vendor.CompanyId, {
         isVerfied: true,
         isrejected: false,
+        $push: { rejectremark: remarks },
       });
     } else {
       await CompanyModel.findByIdAndUpdate(vendor.CompanyId, {
         isVerfied: false,
         isrejected: true,
+        $push: { rejectremark: remarks }
       });
     }
 

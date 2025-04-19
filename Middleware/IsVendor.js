@@ -18,7 +18,7 @@ const IsVendor = async (req, res, next) => {
     if (!vendor) {
       return next(new AppErr("unauthorized user or invailed token", 401));
     }
-    console.log(vendor._id)
+   
     req.user = vendor._id;
     req.company = vendor.CompanyId;
 

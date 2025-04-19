@@ -45,9 +45,12 @@ const UpdateTax = async (req, res, next) => {
     }
 
     if (Taxtype) {
-      let checktax = await TaxModel.findOne({ Taxtype: Taxtype });
+      let checktax = await TaxModel.findOne({
+        Taxtype: Taxtype,
+        _id: { $ne: id },
+      });
       if (checktax) {
-        returnnext(new AppErr("Tax Already present", 400));
+        return next(new AppErr("Tax Already present", 400));
       }
     }
 

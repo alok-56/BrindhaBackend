@@ -39,12 +39,10 @@ const ProductSchema = new mongoose.Schema(
     },
     LockStock: {
       type: Number,
-      required: true,
     },
     Images: [],
     Commision: {
-      type: String,
-      required: true,
+      type: Number,
     },
     Yourprice: {
       type: Number,
@@ -57,19 +55,19 @@ const ProductSchema = new mongoose.Schema(
     Status: {
       type: String,
       required: true,
-      enum: ["Pending", "Rejected", "Approved"],
+      enum: ["Pending", "SendForApprove", "Rejected", "Approved", "Live"],
+      default: "Pending",
     },
-    Remarks: {
-      type: String,
-    },
+    Remarks: [
+      {
+        type: String,
+      },
+    ],
   },
   {
     timestamps: true,
   }
 );
-
-ProductSchema.index({ Subcategoryname: 1 });
-ProductSchema.createIndexes();
 
 const ProductModel = mongoose.model("Product", ProductSchema);
 module.exports = ProductModel;

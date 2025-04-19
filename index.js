@@ -10,6 +10,7 @@ const SuperadminRouter = require("./Routes/superadmin");
 const VendoradminRouter = require("./Routes/vendor");
 const FileRouter = require("./Routes/FileUpload");
 const MasteradminRouter = require("./Routes/master");
+const ProductRouter = require("./Routes/product");
 require("dotenv").config();
 
 ConnectDatabase();
@@ -26,6 +27,7 @@ app.use("/api/v1/superadmin", SuperadminRouter);
 app.use("/api/v1/vendor", VendoradminRouter);
 app.use("/api/v1/file", FileRouter);
 app.use("/api/v1/master", MasteradminRouter);
+app.use("/api/v1/product", ProductRouter);
 
 // Not fount Route
 app.use("*", (req, res, next) => {

@@ -49,6 +49,7 @@ const Updatemeasurement = async (req, res, next) => {
     if (measurement) {
       let checkmeasurement = await MeasurementModel.findOne({
         measurement: measurement,
+        _id: { $ne: id },
       });
       if (checkmeasurement) {
         returnnext(new AppErr("measurement Already present", 400));
