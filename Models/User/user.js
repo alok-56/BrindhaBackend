@@ -20,16 +20,16 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    UserType: {
+      type: String,
+      required: true,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-UserSchema.index({ Email: 1 });
-UserSchema.index({ Number: 1 });
-
-UserSchema.createIndexes();
 
 const UserModel = mongoose.model("user", UserSchema);
 module.exports = UserModel;
