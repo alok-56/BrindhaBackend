@@ -1,6 +1,6 @@
 const { validationResult } = require("express-validator");
 const AppErr = require("../../Helper/appError");
-const TaxModel = require("../../Models/Master/Tax");
+const TaxModel = require("../../Models/Master/tax");
 
 // Create Tax
 const CreateTax = async (req, res, next) => {

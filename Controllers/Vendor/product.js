@@ -1,7 +1,7 @@
 const { validationResult } = require("express-validator");
 const AppErr = require("../../Helper/appError");
 const CategoryModel = require("../../Models/Master/category");
-const MeasurementModel = require("../../Models/Master/Measurement");
+const MeasurementModel = require("../../Models/Master/measurement");
 const ProductModel = require("../../Models/Product/product");
 const SubcategoryModel = require("../../Models/Master/subcategory");
 

@@ -1,6 +1,6 @@
 const { validationResult } = require("express-validator");
 const AppErr = require("../../Helper/appError");
-const MeasurementModel = require("../../Models/Master/Measurement");
+const MeasurementModel = require("../../Models/Master/measurement");
 
 // Create measurement
 const Createmeasurement = async (req, res, next) => {
