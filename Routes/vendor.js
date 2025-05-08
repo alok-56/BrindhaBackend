@@ -9,7 +9,7 @@ const {
   Verificationstatus,
   UpdatePassword,
   UpdateVendorProfile,
-} = require("../Controllers/Vendor/Auth");
+} = require("../Controllers/Vendor/auth");
 const VendoradminRouter = express.Router();
 
 // Vendor create
