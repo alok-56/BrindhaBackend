@@ -10,7 +10,10 @@ const {
 } = require("../Controllers/Vendor/product");
 const { IsVendorVerified } = require("../Middleware/IsVendorverified");
 const { IsSuperAdmin } = require("../Middleware/IsSuperAdmin");
-const { FetchAllProduct, ApproveRejectProducts } = require("../Controllers/SuperAdmin/product");
+const {
+  FetchAllProduct,
+  ApproveRejectProducts,
+} = require("../Controllers/SuperAdmin/product");
 const ProductRouter = express.Router();
 
 //Product add
@@ -63,7 +66,7 @@ ProductRouter.get(
   GetProductById
 );
 
-// Fetch All products
+// Fetch All products super admin
 ProductRouter.get("/get/products", IsSuperAdmin, FetchAllProduct);
 
 // Approve/Reject Products
