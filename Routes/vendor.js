@@ -1,6 +1,6 @@
 const express = require("express");
 const { body } = require("express-validator");
-const { Isvendor, IsVendor } = require("../Middleware/Isvendor");
+const { Isvendor, IsVendor } = require("../Middleware/IsVendor");
 const {
   CreateVendor,
   LoginVendor,
