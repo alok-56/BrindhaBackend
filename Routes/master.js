@@ -7,7 +7,7 @@ const {
   GetAllTax,
   GetTaxById,
   DeleteTax,
-} = require("../Controllers/Master/Tax");
+} = require("../Controllers/Master/tax");
 const {
   Createmeasurement,
   Updatemeasurement,
