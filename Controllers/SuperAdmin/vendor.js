@@ -11,11 +11,10 @@ const GetVendorList = async (req, res, next) => {
     let skip = (page - 1) * limit;
 
     let query = {};
-    if (status) {
+    if (status && status !== "all") {
       query.isCompanyVerified = status;
     }
 
-    // Get total documents for pagination
     const totalVendors = await VendorModel.countDocuments(query);
 
     const vendors = await VendorModel.find(query)
@@ -40,6 +39,7 @@ const GetVendorList = async (req, res, next) => {
     return next(new AppErr(error.message, 500));
   }
 };
+
 
 // Get Vendor by Id
 const GetVendorById = async (req, res, next) => {
