@@ -12,6 +12,7 @@ const FileRouter = require("./Routes/FileUpload");
 const MasteradminRouter = require("./Routes/master");
 const ProductRouter = require("./Routes/product");
 const UserRouter = require("./Routes/user");
+const OrderRouter = require("./Routes/order");
 require("dotenv").config();
 
 ConnectDatabase();
@@ -30,6 +31,7 @@ app.use("/api/v1/file", FileRouter);
 app.use("/api/v1/master", MasteradminRouter);
 app.use("/api/v1/product", ProductRouter);
 app.use("/api/v1/user", UserRouter);
+app.use("/api/v1/order", OrderRouter);
 
 // Not fount Route
 app.use("*", (req, res, next) => {

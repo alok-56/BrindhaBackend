@@ -2,78 +2,66 @@ const mongoose = require("mongoose");
 
 const OrderSchema = new mongoose.Schema(
   {
-    OrderId: {
-      type: String,
-      required: true,
-    },
-    UserId: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",
       required: true,
     },
-    VendorId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "vendor",
-      required: true,
-    },
-    OrderItems: [
+    subOrders: [
       {
-        ProductId: String,
-        Quantity: Number,
-        MeasturmentId: String,
-        Price: Number,
+        vendorId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "vendor",
+          required: true,
+        },
+        products: [
+          {
+            productId: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: "Product",
+              required: true,
+            },
+            quantity: { type: Number, required: true },
+            price: { type: Number, required: true },
+            commissionPercent: { type: Number, required: true },
+          },
+        ],
+        subtotal: { type: Number, required: true },
+        deliveryCharge: { type: Number, required: true },
+        Returned: Boolean,
+        ReturnRequested: Boolean,
+        ReturnReason: String,
+        ReturnStatus: {
+          type: String,
+          enum: ["None", "Requested", "Approved", "Rejected", "Completed"],
+          default: "None",
+        },
+        total: { type: Number, required: true },
+        status: {
+          type: String,
+          enum: ["Pending", "Processing", "Delivered", "Cancelled"],
+          default: "Pending",
+        },
       },
     ],
-    TotalProductPrice: {
-      type: Number,
-      required: true,
-    },
-    DeliveryChanges: {
-      type: Number,
-      required: true,
-    },
-    Tax1: {
-      type: Number,
-      required: true,
-    },
-    TotalBill: {
-      type: Number,
-      required: true,
-    },
-    TotalCommision: {
-      type: Number,
-      required: true,
-    },
-    OrderStatus: {
+    totalAmount: { type: Number, required: true },
+    taxAmount: { type: Number, required: true },
+    grandTotal: { type: Number, required: true },
+    razorpayOrderId: String,
+    razorpayPaymentId: String,
+    paymentStatus: {
       type: String,
-      enum: ["Pending", "Shipped", "Delivered", "Cancelled"],
+      enum: ["Pending", "Completed", "Failed"],
       default: "Pending",
     },
-    TrackingInfo: {
-      trackingNumber: {
-        type: String,
-        default: "",
-      },
-      carrier: {
-        type: String,
-        default: "",
-      },
-    },
-    PaymentMode: {
+    paymentMode: {
       type: String,
-      enum: ["COD", "ONLINE"],
+      enum: ["ONLINE", "COD"],
       required: true,
-    },
-    PaymentStatus: {
-      type: String,
-      enum: ["COD", "ONLINE", "CASH"],
-      default: "Pending",
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-const OrderModel = mongoose.model("order", OrderSchema);
-module.exports = OrderModel;
+const orderModal = mongoose.model("order", OrderSchema);
+module.exports = orderModal;

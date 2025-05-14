@@ -29,6 +29,7 @@ const {
   GetsubcateogriesById,
   Deletesubcateogries,
 } = require("../Controllers/Master/subcateogies");
+const { IsUser } = require("../Middleware/IsUser");
 
 const MasteradminRouter = express.Router();
 
@@ -104,6 +105,9 @@ MasteradminRouter.patch(
 
 // Get cateogries
 MasteradminRouter.get("/get/cateogries", IsSuperAdmin, GetAllcateogries);
+
+// Get Cateogies by User
+MasteradminRouter.get("/users/get/cateogries", IsUser, GetAllcateogries);
 
 // Get cateogries by Id
 MasteradminRouter.get("/get/cateogries/:id", IsSuperAdmin, GetcateogriesById);

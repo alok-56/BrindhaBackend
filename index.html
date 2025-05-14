@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Test Razorpay Order</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  </head>
+  <body>
+    <h2>Test Razorpay Payment</h2>
+    <button id="payBtn">Pay ₹370</button>
+
+    <script>
+      const backendCreateOrderUrl =
+        "http://localhost:9100/api/v1/order/create/order";
+      const backendVerifyUrl =
+        "http://localhost:9100/api/v1/order/verify/order";
+
+      document.getElementById("payBtn").onclick = async function () {
+        try {
+          // 1. Create Razorpay order from backend
+          const res = await fetch(backendCreateOrderUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              amount: 400,
+              subOrders: [
+                {
+                  vendorId: "663c54d290116c2df2c73b25",
+                  products: [
+                    {
+                      productId: "6803d89393e27a692345f208",
+                      price: 100,
+                      quantity: 2,
+                      commissionPercent: 10,
+                    },
+                  ],
+                  subtotal: 200,
+                  deliveryCharge: 30,
+                  total: 230,
+                },
+              ],
+            }),
+          });
+          const data = await res.json();
+          if (!data.razorpayOrderId)
+            throw new Error("Failed to create Razorpay order");
+
+          // 2. Open Razorpay payment popup
+          const options = {
+            key: "rzp_test_MtraH0q566XjUb", // ✅ Your actual test Razorpay key
+            amount: data.amount,
+            currency: "INR",
+            name: "Test Store",
+            description: "Test Transaction",
+            order_id: data.razorpayOrderId,
+            handler: async function (response) {
+              // 3. Prepare test orderData
+              const orderData = {
+                userId: "6803f73cb75db7a9f09cac13",
+                paymentMode: "ONLINE",
+                subOrders: [
+                  {
+                    vendorId: "6800afc07f7c2467f521e9f5",
+                    products: [
+                      {
+                        productId: "6803d89393e27a692345f208",
+                        price: 100,
+                        quantity: 2,
+                        commissionPercent: 10,
+                      },
+                    ],
+                    subtotal: 200,
+                    deliveryCharge: 30,
+                    total: 230,
+                  },
+                ],
+                totalAmount: 350,
+                taxAmount: 20,
+                grandTotal: 370,
+              };
+
+              // 4. Send verification request to backend
+              const verifyRes = await fetch(backendVerifyUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  razorpayOrderId: response.razorpay_order_id,
+                  razorpayPaymentId: response.razorpay_payment_id,
+                  razorpaySignature: response.razorpay_signature,
+                  orderData,
+                }),
+              });
+
+              const verifyData = await verifyRes.json();
+              alert(JSON.stringify(verifyData));
+            },
+            theme: { color: "#3399cc" },
+          };
+
+          const rzp = new Razorpay(options);
+          rzp.open();
+        } catch (err) {
+          alert("Error: " + err.message);
+        }
+      };
+    </script>
+  </body>
+</html>

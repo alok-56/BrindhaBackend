@@ -37,4 +37,6 @@ UserRouter.get("/myprofile", IsUser, GetMyData);
 // Get Super Admin by Id
 UserRouter.delete("/delete/User/:id", IsUser, DeleteUser);
 
+
+
 module.exports = UserRouter;

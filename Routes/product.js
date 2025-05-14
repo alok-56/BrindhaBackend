@@ -14,6 +14,11 @@ const {
   FetchAllProduct,
   ApproveRejectProducts,
 } = require("../Controllers/SuperAdmin/product");
+const { IsUser } = require("../Middleware/IsUser");
+const {
+  FetchAllUserProduct,
+  FetchUserProductById,
+} = require("../Controllers/Users/products");
 const ProductRouter = express.Router();
 
 //Product add
@@ -76,5 +81,11 @@ ProductRouter.patch(
   IsSuperAdmin,
   ApproveRejectProducts
 );
+
+// Fecth All Products for Users
+ProductRouter.get("/users/get/products", IsUser, FetchAllUserProduct);
+
+// Fetch Product by Id
+ProductRouter.get("/users/get/product/:id", IsUser, FetchUserProductById);
 
 module.exports = ProductRouter;

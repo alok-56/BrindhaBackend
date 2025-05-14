@@ -9,7 +9,7 @@ const {
 } = require("../Controllers/SuperAdmin/auth");
 const { body } = require("express-validator");
 const { IsSuperAdmin } = require("../Middleware/IsSuperAdmin");
-const { GetVendorList, GetVendorById, ApproveRejectvendor } = require("../Controllers/SuperAdmin/vendor");
+const { GetVendorList, GetVendorById, ApproveRejectvendor, CountVendorsSummary } = require("../Controllers/SuperAdmin/vendor");
 const SuperadminRouter = express.Router();
 
 // super admin create
@@ -58,5 +58,8 @@ SuperadminRouter.get("/get/vendorlist/:id", IsSuperAdmin, GetVendorById);
 
 // Update Status
 SuperadminRouter.patch("/updatestatus/:id/:status", IsSuperAdmin, ApproveRejectvendor);
+
+// Count Dashbaord vendor Status
+SuperadminRouter.get("/vendor/count", IsSuperAdmin, CountVendorsSummary);
 
 module.exports = SuperadminRouter;

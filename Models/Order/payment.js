@@ -2,43 +2,37 @@ const mongoose = require("mongoose");
 
 const PaymentSchema = new mongoose.Schema(
   {
-    UserId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "user",
-      required: true,
-    },
-    OrderId: {
-      type: String,
-      required: true,
-    },
-    VendorId: {
+    vendorId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "vendor",
       required: true,
     },
-    TransactionId: {
-      type: String,
+    orderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "order",
       required: true,
     },
-    Amount: {
-      type: String,
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user",
       required: true,
     },
-    PaymentMode: {
+    amount: { type: Number, required: true },
+    commissionAmount: { type: Number, required: true },
+    transactionId: { type: String, required: true },
+    paymentMode: {
       type: String,
-      enum: ["COD", "ONLINE", "CASH"],
+      enum: ["ONLINE", "COD", "CASH"],
       required: true,
     },
-    PaymentStatus: {
+    paymentStatus: {
       type: String,
       enum: ["Pending", "Completed", "Failed"],
       default: "Pending",
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-const PaymentModal = mongoose.model("payment", PaymentSchema);
-module.exports = PaymentModal;
+const paymentmodal = mongoose.model("payment", PaymentSchema);
+module.exports=paymentmodal
