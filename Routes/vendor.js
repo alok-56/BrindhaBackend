@@ -10,6 +10,7 @@ const {
   UpdatePassword,
   UpdateVendorProfile,
 } = require("../Controllers/Vendor/auth");
+const { IsSuperAdmin } = require("../Middleware/IsSuperAdmin");
 const VendoradminRouter = express.Router();
 
 // Vendor create
@@ -56,5 +57,6 @@ VendoradminRouter.patch(
   IsVendor,
   UpdateVendorProfile
 );
+
 
 module.exports = VendoradminRouter;
