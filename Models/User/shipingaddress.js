@@ -32,12 +32,6 @@ const ShipingAddressSchema = new mongoose.Schema(
   }
 );
 
-ShipingAddressSchemaModel.index({ UserId: 1 });
-ShipingAddressSchemaModel.index({ State: 1 });
-ShipingAddressSchemaModel.index({ Pincode: 1 });
-
-ShipingAddressSchemaModel.createIndexes();
-
 const ShipingAddressSchemaModel = mongoose.model(
   "shipingaddress",
   ShipingAddressSchema

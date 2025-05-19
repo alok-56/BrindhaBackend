@@ -17,7 +17,7 @@ const saveMultiVendorOrder = async (
   razorpayOrderId,
   razorpayPaymentId
 ) => {
-  const { userId, subOrders, totalAmount, taxAmount, grandTotal, paymentMode } =
+  const { userId, subOrders, totalAmount, taxAmount, grandTotal, paymentMode,ShipingAddress } =
     orderData;
 
   const order = new orderModal({
@@ -30,6 +30,7 @@ const saveMultiVendorOrder = async (
     paymentStatus: "Completed",
     razorpayOrderId,
     razorpayPaymentId,
+    ShipingAddress
   });
 
   const savedOrder = await order.save();
@@ -46,7 +47,7 @@ const saveMultiVendorOrder = async (
       return acc + (itemTotal * item.commissionPercent) / 100;
     }, 0);
     const vendorAmount =
-      totalProductPrice + sub.deliveryCharge - totalCommission;
+      totalProductPrice + sub.deliveryCharge - (totalCommission + taxAmount);
 
     await paymentmodal.create({
       vendorId: sub.vendorId,
@@ -188,10 +189,6 @@ const GetMyorder = async (req, res, next) => {
     return next(new AppErr(error.message, 500));
   }
 };
-
-// request return order
-
-// Get return order status
 
 module.exports = {
   CreateOrder,

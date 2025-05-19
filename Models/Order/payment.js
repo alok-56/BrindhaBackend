@@ -20,6 +20,11 @@ const PaymentSchema = new mongoose.Schema(
     amount: { type: Number, required: true },
     commissionAmount: { type: Number, required: true },
     transactionId: { type: String, required: true },
+    payout: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
     paymentMode: {
       type: String,
       enum: ["ONLINE", "COD", "CASH"],
@@ -30,9 +35,14 @@ const PaymentSchema = new mongoose.Schema(
       enum: ["Pending", "Completed", "Failed"],
       default: "Pending",
     },
+    PayoutStatus: {
+      type: String,
+      enum: ["Pending", "Completed", "Failed"],
+      default: "Pending",
+    },
   },
   { timestamps: true }
 );
 
 const paymentmodal = mongoose.model("payment", PaymentSchema);
-module.exports=paymentmodal
+module.exports = paymentmodal;

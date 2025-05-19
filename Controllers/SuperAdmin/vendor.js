@@ -1,6 +1,10 @@
+const mongoose = require("mongoose");
 const AppErr = require("../../Helper/appError");
 const CompanyModel = require("../../Models/Vendor/companydetails");
 const VendorModel = require("../../Models/Vendor/vendor");
+const paymentmodal = require("../../Models/Order/payment");
+const ProductModel = require("../../Models/Product/product");
+const orderModal = require("../../Models/Order/order");
 
 // Get Vendor List with filter
 const GetVendorList = async (req, res, next) => {
@@ -154,9 +158,210 @@ const CountVendorsSummary = async (req, res, next) => {
   }
 };
 
+// Revenue and commision graph
+const getRevenueReport = async (req, res, next) => {
+  try {
+    const { vendorId, filter = "week" } = req.query;
+
+    const matchStage = {
+      paymentStatus: "Completed",
+    };
+
+    if (vendorId) {
+      matchStage.vendorId = new mongoose.Types.ObjectId(vendorId);
+    }
+
+    let groupStage = {};
+    let labels = [];
+    let fullLabels = [];
+    const sortStage = { _id: 1 };
+
+    if (filter === "week") {
+      groupStage = { _id: { $dayOfWeek: "$createdAt" } };
+      fullLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    } else if (filter === "month") {
+      groupStage = { _id: { $month: "$createdAt" } };
+      fullLabels = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+    } else if (filter === "year") {
+      groupStage = { _id: { $year: "$createdAt" } };
+    } else {
+      return res.status(400).json({ status: false, message: "Invalid filter" });
+    }
+
+    const result = await paymentmodal.aggregate([
+      { $match: matchStage },
+      {
+        $group: {
+          _id: groupStage._id,
+          revenue: { $sum: "$amount" },
+          commission: { $sum: "$commissionAmount" },
+        },
+      },
+      { $sort: sortStage },
+    ]);
+
+    const revenue = [];
+    const commission = [];
+
+    if (filter === "year") {
+      labels = result.map((r) => r._id.toString());
+      result.forEach((r) => {
+        revenue.push(r.revenue);
+        commission.push(r.commission);
+      });
+    } else {
+      const resultMap = {};
+      result.forEach((r) => {
+        resultMap[r._id] = { revenue: r.revenue, commission: r.commission };
+      });
+
+      for (let i = 1; i <= fullLabels.length; i++) {
+        const data = resultMap[i] || { revenue: 0, commission: 0 };
+        revenue.push(data.revenue);
+        commission.push(data.commission);
+        labels.push(fullLabels[i - 1]);
+      }
+    }
+
+    return res.status(200).json({
+      status: true,
+      data: {
+        revenue,
+        commission,
+        labels,
+        filter,
+      },
+    });
+  } catch (err) {
+    console.error("Revenue aggregation error:", err);
+    return res.status(500).json({ status: false, message: "Server Error" });
+  }
+};
+
+// Seller history
+const getVendorStats = async (req, res, next) => {
+  try {
+    const { vendorId } = req.params;
+    const { filter = "week" } = req.query;
+
+    const matchStage = {
+      vendorId: new mongoose.Types.ObjectId(vendorId),
+      paymentStatus: "Completed",
+    };
+
+    const groupStage = {};
+    const labelMap = [];
+    const sortStage = {};
+
+    if (filter === "week") {
+      groupStage._id = { $dayOfWeek: "$createdAt" };
+      labelMap.push("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat");
+      sortStage["_id"] = 1;
+    } else if (filter === "month") {
+      groupStage._id = { $month: "$createdAt" };
+      labelMap.push(
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+      );
+      sortStage["_id"] = 1;
+    } else if (filter === "year") {
+      groupStage._id = { $year: "$createdAt" };
+      sortStage["_id"] = 1;
+    }
+
+    groupStage.revenue = { $sum: "$amount" };
+    groupStage.commission = { $sum: "$commissionAmount" };
+
+    const [totalProducts, totalOrders, paymentStats, graphStats] =
+      await Promise.all([
+        ProductModel.countDocuments({ VendorId: vendorId }),
+        orderModal.countDocuments({ "subOrders.vendorId": vendorId }),
+        paymentmodal.aggregate([
+          { $match: matchStage },
+          {
+            $group: {
+              _id: null,
+              totalRevenue: { $sum: "$amount" },
+              totalCommission: { $sum: "$commissionAmount" },
+            },
+          },
+        ]),
+        paymentmodal.aggregate([
+          { $match: matchStage },
+          { $group: groupStage },
+          { $sort: sortStage },
+        ]),
+      ]);
+
+    const revenue = [];
+    const commission = [];
+    const labels = [];
+
+    if (filter === "week" || filter === "month") {
+      graphStats.forEach((entry) => {
+        labels.push(labelMap[entry._id - (filter === "week" ? 1 : 1)]);
+        revenue.push(entry.revenue);
+        commission.push(entry.commission);
+      });
+    } else if (filter === "year") {
+      graphStats.forEach((entry) => {
+        labels.push(entry._id.toString());
+        revenue.push(entry.revenue);
+        commission.push(entry.commission);
+      });
+    }
+
+    const { totalRevenue = 0, totalCommission = 0 } = paymentStats[0] || {};
+
+    return res.status(200).json({
+      status: true,
+      summary: {
+        totalProducts,
+        totalOrders,
+        totalRevenue,
+        totalCommission,
+      },
+      graph: {
+        revenue,
+        commission,
+        labels,
+        filter,
+      },
+    });
+  } catch (err) {
+    console.error("Vendor Stats Error:", err);
+    res.status(500).json({ status: false, message: "Server error" });
+  }
+};
+
 module.exports = {
   GetVendorList,
   GetVendorById,
   ApproveRejectvendor,
   CountVendorsSummary,
+  getRevenueReport,
+  getVendorStats,
 };
