@@ -132,7 +132,7 @@ const PushMessageToTicket = async (req, res, next) => {
 const GetTicketById = async (req, res, next) => {
   try {
     let { id } = req.params;
-    const tickets = await TicketModal.findbyId(id);
+    const tickets = await TicketModal.findById(id)
 
     res.status(200).json({
       status: true,
