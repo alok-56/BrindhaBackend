@@ -7,6 +7,16 @@ const RatingSchema = new mongoose.Schema(
       ref: "Product",
       required: true,
     },
+    VendorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Vendor",
+      required: true,
+    },
+    UserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     rating: {
       type: Number,
       required: true,
@@ -20,9 +30,6 @@ const RatingSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
-RatingSchema.index({ rating: 1 });
-RatingSchema.createIndexes();
 
 const RatingModel = mongoose.model("rating", RatingSchema);
 module.exports = RatingModel;

@@ -9,8 +9,14 @@ const {
   Verificationstatus,
   UpdatePassword,
   UpdateVendorProfile,
+  CreateSupportVendor,
+  UpdateSupportVendor,
+  GetAllSupportVendors,
+  GetSupportVendorById,
+  DeleteSupportVendor,
 } = require("../Controllers/Vendor/auth");
 const { IsSuperAdmin } = require("../Middleware/IsSuperAdmin");
+const { IsVendorVerified } = require("../Middleware/IsVendorverified");
 const VendoradminRouter = express.Router();
 
 // Vendor create
@@ -58,5 +64,45 @@ VendoradminRouter.patch(
   UpdateVendorProfile
 );
 
+// Create Support Vendor
+VendoradminRouter.post(
+  "/support/staff/vendor",
+  body("Vendorname").notEmpty().withMessage("Vendorname is required"),
+  body("Email").notEmpty().withMessage("Email is required"),
+  body("Number").notEmpty().withMessage("Number is required"),
+  body("Password").notEmpty().withMessage("Password is required"),
+  IsVendor,
+  IsVendorVerified,
+  CreateSupportVendor
+);
+
+// Update Support Vendor
+VendoradminRouter.patch(
+  "/support/staff/vendor/:VendorId",
+  IsVendor,
+  IsVendorVerified,
+  UpdateSupportVendor
+);
+
+VendoradminRouter.get(
+  "/support/staff/vendors",
+  IsVendor,
+  IsVendorVerified,
+  GetAllSupportVendors
+);
+
+VendoradminRouter.get(
+  "/support/staff/vendor/:VendorId",
+  IsVendor,
+  IsVendorVerified,
+  GetSupportVendorById
+);
+
+VendoradminRouter.delete(
+  "/support/staff/vendor/:VendorId",
+  IsVendor,
+  IsVendorVerified,
+  DeleteSupportVendor
+);
 
 module.exports = VendoradminRouter;

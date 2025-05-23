@@ -17,6 +17,11 @@ const ProductSchema = new mongoose.Schema(
       ref: "vendor",
       required: true,
     },
+    Ecofriendly:{
+      type:Boolean,
+      required:true,
+      default:false
+    },
     Measturments: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,

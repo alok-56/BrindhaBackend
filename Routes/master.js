@@ -30,6 +30,7 @@ const {
   Deletesubcateogries,
 } = require("../Controllers/Master/subcateogies");
 const { IsUser } = require("../Middleware/IsUser");
+const { IsVendor } = require("../Middleware/IsVendor");
 
 const MasteradminRouter = express.Router();
 
@@ -108,6 +109,9 @@ MasteradminRouter.get("/get/cateogries", IsSuperAdmin, GetAllcateogries);
 
 // Get Cateogies by User
 MasteradminRouter.get("/users/get/cateogries", IsUser, GetAllcateogries);
+
+// Get Cateogies by vendor
+MasteradminRouter.get("/vendor/get/cateogries", IsVendor, GetAllcateogries);
 
 // Get cateogries by Id
 MasteradminRouter.get("/get/cateogries/:id", IsSuperAdmin, GetcateogriesById);

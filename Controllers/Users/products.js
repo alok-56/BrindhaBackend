@@ -10,9 +10,7 @@ const FetchAllUserProduct = async (req, res, next) => {
     limit = parseInt(limit);
 
     // Build the query object
-    const query = {
-      
-    };
+    const query = {};
 
     if (CategoryId) query.CategoryId = CategoryId;
     if (SubcategoryId) query.SubcategoryId = SubcategoryId;
@@ -42,7 +40,7 @@ const FetchAllUserProduct = async (req, res, next) => {
 };
 
 // get product by Id
-const FetchUserProductById = async (req,res,next) => {
+const FetchUserProductById = async (req, res, next) => {
   try {
     let { id } = req.params;
 

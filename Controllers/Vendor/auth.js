@@ -13,7 +13,7 @@ const CreateVendor = async (req, res, next) => {
     }
 
     let { BussinessName, Vendorname, Email, Number, Password } = req.body;
-
+    req.body.Isheadrole = true;
     // Email Check
     let email = await VendorModel.findOne({ Email: Email });
     if (email) {
@@ -88,11 +88,11 @@ const validateRequiredFields = (fields) => {
   return null;
 };
 
-const SendForverification = async (req,res,next) => {
+const SendForverification = async (req, res, next) => {
   try {
     // take loged user id
-    let  id  = req.user
-    console.log(id)
+    let id = req.user;
+    console.log(id);
     let vendor = await VendorModel.findById(id);
     if (!vendor) {
       return next("Vendor not found", 404);
@@ -239,7 +239,7 @@ const SendForverification = async (req,res,next) => {
 // Get My Data
 const MyVerificationData = async (req, res, next) => {
   try {
-    let  id  = req.company;
+    let id = req.company;
     let data = await CompanyModel.findById(id);
 
     return res.status(200).json({
@@ -256,7 +256,7 @@ const MyVerificationData = async (req, res, next) => {
 // Check My Verfication Status
 const Verificationstatus = async (req, res, next) => {
   try {
-    let  id  = req.user;
+    let id = req.user;
     let status = await VendorModel.findById(id).select("isCompanyVerified");
 
     return res.status(200).json({
@@ -273,7 +273,7 @@ const Verificationstatus = async (req, res, next) => {
 // Update Password
 const UpdatePassword = async (req, res, next) => {
   try {
-    let  id  = req.user;
+    let id = req.user;
 
     let { Email, Number, Password } = req.body;
 
@@ -318,7 +318,7 @@ const UpdatePassword = async (req, res, next) => {
 const UpdateVendorProfile = async (req, res, next) => {
   try {
     let { Vendorname, Email, Number } = req.body;
-    let  id  = req.user;
+    let id = req.user;
 
     if (!id) {
       return next(new AppErr("Vendor id is  required ", 400));
@@ -369,6 +369,176 @@ const UpdateVendorProfile = async (req, res, next) => {
   }
 };
 
+// create support Vendor
+const CreateSupportVendor = async (req, res, next) => {
+  try {
+    let err = validationResult(req);
+    if (err.errors.length > 0) {
+      return next(new AppErr(err.errors[0].msg, 403));
+    }
+
+    let { Vendorname, Email, Number, Password, Permission } = req.body;
+
+    // fetch head vendor
+    let headvendor = await VendorModel.findById(req.user);
+    if (!headvendor) {
+      return next(new AppErr("Head Vendor not found", 404));
+    }
+
+    req.body.CompanyId = req.company;
+    req.body.BussinessName = headvendor.BussinessName;
+    req.body.ReportAdmin = req.user;
+    req.body.isCompanyVerified = "Approved";
+
+    // Email Check
+    let email = await VendorModel.findOne({ Email: Email });
+    if (email) {
+      return next(new AppErr("email already exists", 400));
+    }
+
+    // Number Check
+    let number = await VendorModel.findOne({ Number: Number });
+    if (number) {
+      return next(new AppErr("number already exists", 400));
+    }
+
+    // Create vendor
+    let vendor = await VendorModel.create(req.body);
+
+    return res.status(200).json({
+      status: true,
+      code: 200,
+      message: "Vendor Created Successfully",
+      data: vendor,
+    });
+  } catch (error) {
+    return next(new AppErr(error.message, 500));
+  }
+};
+
+// Update support vendor
+const UpdateSupportVendor = async (req, res, next) => {
+  try {
+    let err = validationResult(req);
+    if (err.errors.length > 0) {
+      return next(new AppErr(err.errors[0].msg, 403));
+    }
+
+    const { VendorId } = req.params;
+    const { Vendorname, Email, Number, Password, Permission } = req.body;
+
+    // Fetch vendor to update
+    let vendor = await VendorModel.findById(VendorId);
+    if (!vendor) {
+      return next(new AppErr("Staff Vendor not found", 404));
+    }
+
+    // Check for email uniqueness if changed
+    if (Email && Email !== vendor.Email) {
+      const existingEmail = await VendorModel.findOne({ Email });
+      if (existingEmail) {
+        return next(new AppErr("Email already exists", 400));
+      }
+      vendor.Email = Email;
+    }
+
+    // Check for number uniqueness if changed
+    if (Number && Number !== vendor.Number) {
+      const existingNumber = await VendorModel.findOne({ Number });
+      if (existingNumber) {
+        return next(new AppErr("Number already exists", 400));
+      }
+      vendor.Number = Number;
+    }
+
+    // Update other fields
+    if (Vendorname) vendor.Vendorname = Vendorname;
+    if (Password) vendor.Password = Password;
+    if (Permission) vendor.Permission = Permission;
+
+    await vendor.save();
+
+    return res.status(200).json({
+      status: true,
+      code: 200,
+      message: "Staff Vendor updated successfully",
+      data: vendor,
+    });
+  } catch (error) {
+    return next(new AppErr(error.message, 500));
+  }
+};
+
+// get all support vendor
+const GetAllSupportVendors = async (req, res, next) => {
+  try {
+    const supportVendors = await VendorModel.find({
+      ReportAdmin: req.user,
+      Isheadrole: false,
+    }).select("-Password");
+
+    return res.status(200).json({
+      status: true,
+      code: 200,
+      message: "Support vendors fetched successfully",
+      data: supportVendors,
+    });
+  } catch (error) {
+    return next(new AppErr(error.message, 500));
+  }
+};
+
+// Get support vendor by Id
+const GetSupportVendorById = async (req, res, next) => {
+  try {
+    const { VendorId } = req.params;
+
+    const vendor = await VendorModel.findOne({
+      _id: VendorId,
+      ReportAdmin: req.user,
+      Isheadrole: false,
+    }).select("-Password");
+
+    if (!vendor) {
+      return next(new AppErr("Support vendor not found", 404));
+    }
+
+    return res.status(200).json({
+      status: true,
+      code: 200,
+      message: "Support vendor fetched successfully",
+      data: vendor,
+    });
+  } catch (error) {
+    return next(new AppErr(error.message, 500));
+  }
+};
+
+// Delete support vendor
+const DeleteSupportVendor = async (req, res, next) => {
+  try {
+    const { VendorId } = req.params;
+
+    const vendor = await VendorModel.findOneAndDelete({
+      _id: VendorId,
+      ReportAdmin: req.user,
+      Isheadrole: false,
+    });
+
+    if (!vendor) {
+      return next(new AppErr("Support vendor not found or unauthorized", 404));
+    }
+
+    return res.status(200).json({
+      status: true,
+      code: 200,
+      message: "Support vendor deleted successfully",
+    });
+  } catch (error) {
+    return next(new AppErr(error.message, 500));
+  }
+};
+
 module.exports = {
   CreateVendor,
   LoginVendor,
@@ -376,5 +546,10 @@ module.exports = {
   MyVerificationData,
   Verificationstatus,
   UpdatePassword,
-  UpdateVendorProfile
+  UpdateVendorProfile,
+  CreateSupportVendor,
+  UpdateSupportVendor,
+  GetAllSupportVendors,
+  GetSupportVendorById,
+  DeleteSupportVendor,
 };

@@ -18,9 +18,15 @@ const IsVendor = async (req, res, next) => {
     if (!vendor) {
       return next(new AppErr("unauthorized user or invailed token", 401));
     }
-   
-    req.user = vendor._id;
-    req.company = vendor.CompanyId;
+
+    if (vendor.Isheadrole) {
+      req.user = vendor._id;
+      req.company = vendor.CompanyId;
+    } else {
+      console.log(vendor.ReportAdmin)
+      req.user = vendor.ReportAdmin;
+      req.company = vendor.CompanyId;
+    }
 
     next();
   } catch (error) {
@@ -29,5 +35,5 @@ const IsVendor = async (req, res, next) => {
 };
 
 module.exports = {
-    IsVendor,
+  IsVendor,
 };

@@ -12,6 +12,9 @@ const {
   GetVendorOrderById,
   UpdateOrderStatusByVendor,
   GetVendorDashboardStats,
+  VendorsOrderCountApi,
+  VendorOrderStatsApi,
+  VendorEarningsStatsApi,
 } = require("../Controllers/Vendor/order");
 const {
   FetchAllorderbySuper,
@@ -63,6 +66,15 @@ OrderRouter.patch(
 
 // Dashboard Count Api
 OrderRouter.get("/vendor/stats", IsVendor, GetVendorDashboardStats);
+
+// Order Dashboard count
+OrderRouter.get("/vendor/count/dashbaord", IsVendor, VendorsOrderCountApi);
+
+// order graph
+OrderRouter.get("/vendor/stats/orders", IsVendor, VendorOrderStatsApi);
+
+// earning graph
+OrderRouter.get("/vendor/stats/earnings", IsVendor, VendorEarningsStatsApi);
 
 // <!--------------------------SUPER ADMIN----------------------------->
 

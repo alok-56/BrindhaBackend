@@ -6,13 +6,14 @@ const CategorySchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    Image: {
+      type: String,
+    },
   },
   {
     timestamps: true,
   }
 );
-
-
 
 const CategoryModel = mongoose.model("category", CategorySchema);
 module.exports = CategoryModel;

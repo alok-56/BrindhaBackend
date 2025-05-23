@@ -19,12 +19,22 @@ const IsVendorVerified = async (req, res, next) => {
       return next(new AppErr("unauthorized user or invailed token", 401));
     }
 
-    if (vendor.isCompanyVerified === "Approved") {
-      req.user = vendor._id;
-      req.company = vendor.CompanyId;
-      next();
+    if (vendor.Isheadrole) {
+      if (vendor.isCompanyVerified === "Approved") {
+        req.user = vendor._id;
+        req.company = vendor.CompanyId;
+        next();
+      } else {
+        return next(new AppErr("Access denied! Verification pending", 401));
+      }
     } else {
-      return next(new AppErr("Access denied! Verification pending", 401));
+      if (vendor.isCompanyVerified === "Approved") {
+        req.user = vendor.ReportAdmin;
+        req.company = vendor.CompanyId;
+        next();
+      } else {
+        return next(new AppErr("Access denied! Verification pending", 401));
+      }
     }
   } catch (error) {
     return next(new AppErr(error.message, 500));

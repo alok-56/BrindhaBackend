@@ -14,6 +14,9 @@ const VendorSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    ReportAdmin: {
+      type: String,
+    },
     Email: {
       type: String,
       required: true,
@@ -39,13 +42,14 @@ const VendorSchema = new mongoose.Schema(
       default: "Pending",
       enum: ["Pending", "Requestsend", "rejected", "Resend", "Approved"],
     },
+    Permission: {
+      type: [],
+    },
   },
   {
     timestamps: true,
   }
 );
-
-
 
 const VendorModel = mongoose.model("vendor", VendorSchema);
 module.exports = VendorModel;

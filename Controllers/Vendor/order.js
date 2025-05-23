@@ -241,15 +241,173 @@ const GetVendorDashboardStats = async (req, res, next) => {
   }
 };
 
-// Get All return Request
+// Order Count api
+const VendorsOrderCountApi = async (req, res, next) => {
+  try {
+    const orders = await orderModal.find({
+      "subOrders.vendorId": req.user,
+    });
 
-// Get Return Request By Id
+    let totalOrders = 0;
+    let totalPending = 0;
+    let totalDelivered = 0;
+    let totalCancelled = 0;
+    let totalReturned = 0;
+    let totalEarning = 0;
 
-// Update Status Of reqtuen Request
+    orders.forEach((order) => {
+      const vendorSubOrders = order.subOrders.filter(
+        (sub) => sub.vendorId.toString() === req.user.toString()
+      );
+
+      vendorSubOrders.forEach((sub) => {
+        totalOrders++;
+
+        // Count by status
+        if (sub.status === "Pending") totalPending++;
+        if (sub.status === "Delivered") totalDelivered++;
+        if (sub.status === "Cancelled") totalCancelled++;
+
+        // Earnings from delivered orders
+        if (sub.status === "Delivered") {
+          const vendorAmount = sub.total;
+          totalEarning += vendorAmount;
+        }
+
+        // Count returns
+        if (sub.Returned === true) totalReturned++;
+      });
+    });
+
+    return res.status(200).json({
+      status: true,
+      code: 200,
+      message: "Order count success",
+      data: {
+        totalOrders,
+        totalPending,
+        totalDelivered,
+        totalCancelled,
+        totalReturned,
+        totalEarning,
+      },
+    });
+  } catch (error) {
+    return next(new AppErr(error.message, 500));
+  }
+};
+
+// Vendor Earnings Stats - Week or Month filter only
+const VendorEarningsStatsApi = async (req, res, next) => {
+  try {
+    const filter = req.query.filter;
+    const vendorId = req.user;
+
+    if (!filter || !["week", "month"].includes(filter)) {
+      return next(new AppErr("Filter must be 'week' or 'month'", 400));
+    }
+
+    // Match payments for vendor with completed status — no year filter
+    const matchStage = {
+      vendorId,
+      paymentStatus: "Completed",
+    };
+
+    let groupStage, labelMap, formatLabel;
+
+    if (filter === "week") {
+      groupStage = { _id: { $dayOfWeek: "$createdAt" } };
+      labelMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      formatLabel = (id) => labelMap[id - 1];
+    } else if (filter === "month") {
+      groupStage = { _id: { $month: "$createdAt" } };
+      labelMap = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+      ];
+      formatLabel = (id) => labelMap[id - 1];
+    }
+
+    const payments = await paymentmodal.aggregate([
+      { $match: matchStage },
+      { $group: { _id: groupStage._id, totalAmount: { $sum: "$amount" } } },
+      { $sort: { _id: 1 } },
+    ]);
+
+    return res.status(200).json({
+      status: true,
+      code: 200,
+      message: "Vendor earnings stats fetched successfully",
+      data: {
+        labels: payments.map((p) => formatLabel(p._id)),
+        data: payments.map((p) => p.totalAmount),
+      },
+    });
+  } catch (err) {
+    return next(new AppErr(err.message, 500));
+  }
+};
+
+// Vendor Order Stats - Week or Month filter only
+const VendorOrderStatsApi = async (req, res, next) => {
+  try {
+    const filter = req.query.filter;
+    const vendorId = req.user;
+
+    if (!filter || !["week", "month"].includes(filter)) {
+      return next(new AppErr("Filter must be 'week' or 'month'", 400));
+    }
+
+    // Match all orders — no year filter here either
+    const matchStage = {};
+
+    let projectStage, groupStage, labelMap, formatLabel;
+
+    if (filter === "week") {
+      projectStage = { day: { $dayOfWeek: "$createdAt" }, "subOrders.vendorId": 1 };
+      groupStage = { _id: "$day" };
+      labelMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      formatLabel = (id) => labelMap[id - 1];
+    } else if (filter === "month") {
+      projectStage = { month: { $month: "$createdAt" }, "subOrders.vendorId": 1 };
+      groupStage = { _id: "$month" };
+      labelMap = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+      ];
+      formatLabel = (id) => labelMap[id - 1];
+    }
+
+    const orders = await orderModal.aggregate([
+      { $match: matchStage },
+      { $unwind: "$subOrders" },
+      { $match: { "subOrders.vendorId": vendorId } },
+      { $project: projectStage },
+      { $group: { ...groupStage, count: { $sum: 1 } } },
+      { $sort: { _id: 1 } },
+    ]);
+
+    return res.status(200).json({
+      status: true,
+      code: 200,
+      message: "Vendor order stats fetched successfully",
+      data: {
+        labels: orders.map((o) => formatLabel(o._id)),
+        data: orders.map((o) => o.count),
+      },
+    });
+  } catch (err) {
+    return next(new AppErr(err.message, 500));
+  }
+};
+
 
 module.exports = {
   GetAllorder,
   GetVendorOrderById,
   UpdateOrderStatusByVendor,
   GetVendorDashboardStats,
+  VendorsOrderCountApi,
+  VendorEarningsStatsApi,
+  VendorOrderStatsApi,
 };

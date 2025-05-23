@@ -23,6 +23,7 @@ const CreateProduct = async (req, res, next) => {
       Images,
       Yourprice,
       SellingPrice,
+      Ecofriendly,
     } = req.body;
 
     let subcateogery = await SubcategoryModel.findById(SubcategoryId);
@@ -153,6 +154,8 @@ const AllProductbyVendor = async (req, res, next) => {
       VendorId: req.user,
     };
 
+    console.log(req.user)
+
     if (Status) query.Status = Status;
     if (CategoryId) query.CategoryId = CategoryId;
     if (SubcategoryId) query.SubcategoryId = SubcategoryId;
@@ -199,10 +202,83 @@ const GetProductById = async (req, res, next) => {
   }
 };
 
+// Update Product
+const UpdateProduct = async (req, res, next) => {
+  try {
+    const productId = req.params.id;
+    let err = validationResult(req);
+    if (err.errors.length > 0) {
+      return next(new AppErr(err.errors[0].msg, 403));
+    }
+
+    let {
+      SubcategoryId,
+      Measturments,
+      Name,
+      Description,
+      Features,
+      Stock,
+      Images,
+      Yourprice,
+      SellingPrice,
+      Ecofriendly,
+    } = req.body;
+
+    // Find existing product
+    let product = await ProductModel.findById(productId);
+    if (!product) {
+      return next(new AppErr("Product not found", 404));
+    }
+
+    // If SubcategoryId is provided, validate and update CategoryId accordingly
+    if (SubcategoryId) {
+      const subcategory = await SubcategoryModel.findById(SubcategoryId);
+      if (!subcategory) {
+        return next(new AppErr("Sub Category not found", 404));
+      }
+      product.SubcategoryId = SubcategoryId;
+      product.CategoryId = subcategory.CategoryId;
+    }
+
+    // If Measurement is provided, validate
+    if (Measturments) {
+      const measurement = await MeasurementModel.findById(Measturments);
+      if (!measurement) {
+        return next(new AppErr("Measurement not found", 404));
+      }
+      product.Measturments = Measturments;
+    }
+
+    // Update fields if provided
+    if (Name !== undefined) product.Name = Name;
+    if (Description !== undefined) product.Description = Description;
+    if (Features !== undefined) product.Features = Features;
+    if (Stock !== undefined) product.Stock = Stock;
+    if (Images !== undefined) product.Images = Images;
+    if (Yourprice !== undefined) product.Yourprice = Yourprice;
+    if (SellingPrice !== undefined) product.SellingPrice = SellingPrice;
+    if (Ecofriendly !== undefined) product.Ecofriendly = Ecofriendly;
+
+    // VendorId should not be updated here, assuming it's fixed to creator
+
+    await product.save();
+
+    return res.status(200).json({
+      status: true,
+      code: 200,
+      message: "Product updated successfully",
+      data: product,
+    });
+  } catch (error) {
+    return next(new AppErr(error.message, 500));
+  }
+};
+
 module.exports = {
   CreateProduct,
   SendProductForVerification,
   LiveProduct,
   AllProductbyVendor,
   GetProductById,
+  UpdateProduct
 };
