@@ -4,24 +4,62 @@ const ProductModel = require("../../Models/Product/product");
 // fetch All Products
 const FetchAllUserProduct = async (req, res, next) => {
   try {
-    let { CategoryId, SubcategoryId, page = 1, limit = 10 } = req.query;
+    let {
+      CategoryId,
+      SubcategoryId,
+      page = 1,
+      limit = 10,
+      minPrice,
+      maxPrice,
+      discount,
+      search,
+      tag,
+      Ecofriendly,
+    } = req.query;
 
     page = parseInt(page);
     limit = parseInt(limit);
 
-    // Build the query object
     const query = {};
 
     if (CategoryId) query.CategoryId = CategoryId;
     if (SubcategoryId) query.SubcategoryId = SubcategoryId;
-    query.Status = "Live";
+    if (Ecofriendly) query.Ecofriendly = true;
 
-    // Fetch filtered and paginated products
+    // Price range
+    if (minPrice || maxPrice) {
+      query.SellingPrice = {};
+      if (minPrice) query.SellingPrice.$gte = parseFloat(minPrice);
+      if (maxPrice) query.SellingPrice.$lte = parseFloat(maxPrice);
+    }
+
+    // Discount
+    if (discount) {
+      if (discount === "true") {
+        query.Discount = { $exists: true, $ne: null };
+      } else {
+        query.Discount = discount;
+      }
+    }
+
+    // Search by name
+    if (search) {
+      query.Name = { $regex: search, $options: "i" };
+    }
+
+    // Tag filtering (e.g., 'trending', 'bestseller')
+    if (tag) {
+      query.Tags = tag;
+    }
+
     const products = await ProductModel.find(query)
+      .populate("VendorId")
+      .populate("Measturments")
       .skip((page - 1) * limit)
       .limit(limit);
 
     const totalCount = await ProductModel.countDocuments(query);
+
     return res.status(200).json({
       status: true,
       code: 200,

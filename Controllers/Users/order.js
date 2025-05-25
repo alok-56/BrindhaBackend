@@ -17,8 +17,15 @@ const saveMultiVendorOrder = async (
   razorpayOrderId,
   razorpayPaymentId
 ) => {
-  const { userId, subOrders, totalAmount, taxAmount, grandTotal, paymentMode,ShipingAddress } =
-    orderData;
+  const {
+    userId,
+    subOrders,
+    totalAmount,
+    taxAmount,
+    grandTotal,
+    paymentMode,
+    ShipingAddress,
+  } = orderData;
 
   const order = new orderModal({
     userId,
@@ -30,7 +37,7 @@ const saveMultiVendorOrder = async (
     paymentStatus: "Completed",
     razorpayOrderId,
     razorpayPaymentId,
-    ShipingAddress
+    ShipingAddress,
   });
 
   const savedOrder = await order.save();
@@ -93,6 +100,10 @@ const CreateOrder = async (req, res, next) => {
 
     const { amount, subOrders } = req.body;
 
+    if (!amount) {
+      return next(new AppErr("Amount is required", 404));
+    }
+
     for (const sub of subOrders) {
       for (const item of sub.products) {
         const product = await ProductModel.findById(item.productId);
@@ -124,7 +135,8 @@ const CreateOrder = async (req, res, next) => {
     const order = await razorpay.orders.create(options);
 
     res.json({
-      success: true,
+      status: true,
+      code: 200,
       razorpayOrderId: order.id,
       amount: order.amount,
       currency: order.currency,
@@ -176,19 +188,83 @@ const VerifyOrder = async (req, res, next) => {
 // Get All My Order
 const GetMyorder = async (req, res, next) => {
   try {
-    let order = await paymentmodal
+    const orders = await paymentmodal
       .find({ userId: req.user })
-      .populate("orderId");
+      .populate({
+        path: "orderId",
+        populate: {
+          path: "subOrders.products.productId", 
+        },
+      })
+      .populate("vendorId") 
+      .lean();
+
+    const formattedOrders = [];
+
+    for (let payment of orders) {
+      const { orderId, vendorId, ...paymentInfo } = payment;
+
+      if (!orderId?.subOrders) continue;
+
+      for (let subOrder of orderId.subOrders) {
+        const vendor = subOrder.vendorId;
+        const products = subOrder.products.map((product) => {
+          return {
+            productId: product.productId?._id,
+            name: product.productId?.name,
+            price: product.price,
+            quantity: product.quantity,
+            commissionPercent: product.commissionPercent,
+            image: product.productId?.Images, // if exists
+          };
+        });
+
+        formattedOrders.push({
+          vendor: {
+            _id: vendor?._id,
+            name: vendor?.name,
+            email: vendor?.email,
+            phone: vendor?.phone,
+          },
+          order: {
+            orderId: orderId._id,
+            paymentMode: orderId.paymentMode,
+            paymentStatus: orderId.paymentStatus,
+            grandTotal: orderId.grandTotal,
+            razorpayPaymentId: orderId.razorpayPaymentId,
+            razorpayOrderId: orderId.razorpayOrderId,
+            createdAt: orderId.createdAt,
+          },
+          subOrder: {
+            subOrderId: subOrder._id,
+            status: subOrder.status,
+            total: subOrder.total,
+            deliveryCharge: subOrder.deliveryCharge,
+            ReturnStatus: subOrder.ReturnStatus,
+            products,
+          },
+          transaction: {
+            amount: paymentInfo.amount,
+            commissionAmount: paymentInfo.commissionAmount,
+            payout: paymentInfo.payout,
+            payoutStatus: paymentInfo.PayoutStatus,
+          },
+        });
+      }
+    }
 
     return res.status(200).json({
       status: true,
-      message: "order Fetched successfully",
-      data: order,
+      message: "Orders fetched and formatted successfully",
+      data: formattedOrders,
     });
   } catch (error) {
     return next(new AppErr(error.message, 500));
   }
 };
+
+// Update Lockstock
+
 
 module.exports = {
   CreateOrder,

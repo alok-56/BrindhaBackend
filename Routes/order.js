@@ -26,8 +26,7 @@ const OrderRouter = express.Router();
 // Order create
 OrderRouter.post(
   "/create/order",
-  body("amount").notEmpty().withMessage("Amount is required"),
-  //   IsUser,
+  IsUser,
   CreateOrder
 );
 

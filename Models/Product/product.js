@@ -17,13 +17,14 @@ const ProductSchema = new mongoose.Schema(
       ref: "vendor",
       required: true,
     },
-    Ecofriendly:{
-      type:Boolean,
-      required:true,
-      default:false
+    Ecofriendly: {
+      type: Boolean,
+      required: true,
+      default: false,
     },
     Measturments: {
       type: mongoose.Schema.Types.ObjectId,
+      ref: "Measurement",
       required: true,
     },
     Name: {
@@ -33,6 +34,9 @@ const ProductSchema = new mongoose.Schema(
     Description: {
       type: String,
       required: true,
+    },
+    Discount: {
+      type: String,
     },
     Features: {
       type: [],
@@ -68,6 +72,10 @@ const ProductSchema = new mongoose.Schema(
         type: String,
       },
     ],
+    Tags: {
+      type: [String],
+      default: [],
+    },
   },
   {
     timestamps: true,

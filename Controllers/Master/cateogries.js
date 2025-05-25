@@ -10,7 +10,7 @@ const Createcateogries = async (req, res, next) => {
       return next(new AppErr(err.errors[0].msg, 403));
     }
 
-    let { Categoryname } = req.body;
+    let { Categoryname,Image } = req.body;
 
     let checkcateogries = await CategoryModel.findOne({
       Categoryname: Categoryname,
@@ -40,7 +40,7 @@ const Updatecateogries = async (req, res, next) => {
       return next(new AppErr(err.errors[0].msg, 403));
     }
     let { id } = req.params;
-    let { Categoryname } = req.body;
+    let { Categoryname,Image } = req.body;
 
     if (!id) {
       return next(new AppErr("Id not found", 404));
@@ -58,6 +58,7 @@ const Updatecateogries = async (req, res, next) => {
 
     const updateData = {};
     if (Categoryname) updateData.Categoryname = Categoryname;
+    if(Image) updateData.Image=Image
 
     let newcateogries = await CategoryModel.findByIdAndUpdate(id, updateData, {
       new: true,

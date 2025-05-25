@@ -154,7 +154,7 @@ const AllProductbyVendor = async (req, res, next) => {
       VendorId: req.user,
     };
 
-    console.log(req.user)
+    console.log(req.user);
 
     if (Status) query.Status = Status;
     if (CategoryId) query.CategoryId = CategoryId;
@@ -222,6 +222,7 @@ const UpdateProduct = async (req, res, next) => {
       Yourprice,
       SellingPrice,
       Ecofriendly,
+      Discount,
     } = req.body;
 
     // Find existing product
@@ -258,6 +259,7 @@ const UpdateProduct = async (req, res, next) => {
     if (Yourprice !== undefined) product.Yourprice = Yourprice;
     if (SellingPrice !== undefined) product.SellingPrice = SellingPrice;
     if (Ecofriendly !== undefined) product.Ecofriendly = Ecofriendly;
+    if (Discount !== undefined) product.Discount = Discount;
 
     // VendorId should not be updated here, assuming it's fixed to creator
 
@@ -280,5 +282,5 @@ module.exports = {
   LiveProduct,
   AllProductbyVendor,
   GetProductById,
-  UpdateProduct
+  UpdateProduct,
 };
