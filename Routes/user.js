@@ -7,6 +7,8 @@ const {
   LoginUser,
   GetMyData,
   DeleteUser,
+  SendOtp,
+  ForgetPassword,
 } = require("../Controllers/Users/auth");
 const {
   CreateShippingAddress,
@@ -78,5 +80,21 @@ UserRouter.get("/get/allusers", IsSuperAdmin, FetchAllUserbySuper);
 
 // Get All Users Orders
 UserRouter.get("/get/allusers/orders/:userid", IsSuperAdmin, FetchOrderbyUser);
+
+// Send otp
+UserRouter.post(
+  "/otp/send",
+  body("Email").notEmpty().withMessage("Email is required"),
+
+  SendOtp
+);
+
+// Update Password
+UserRouter.patch(
+  "/Forgetpassword/user",
+  body("Email").notEmpty().withMessage("Email is required"),
+  body("Password").notEmpty().withMessage("Password is required"),
+  ForgetPassword
+);
 
 module.exports = UserRouter;

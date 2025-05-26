@@ -163,10 +163,7 @@ const getRevenueReport = async (req, res, next) => {
   try {
     const { vendorId, filter = "week" } = req.query;
 
-    const matchStage = {
-      paymentStatus: "Completed",
-    };
-
+    const matchStage = { paymentStatus: "Completed" };
     if (vendorId) {
       matchStage.vendorId = new mongoose.Types.ObjectId(vendorId);
     }
@@ -213,15 +210,14 @@ const getRevenueReport = async (req, res, next) => {
       { $sort: sortStage },
     ]);
 
-    const revenue = [];
-    const commission = [];
+    let report = [];
 
     if (filter === "year") {
-      labels = result.map((r) => r._id.toString());
-      result.forEach((r) => {
-        revenue.push(r.revenue);
-        commission.push(r.commission);
-      });
+      report = result.map((r) => ({
+        period: r._id.toString(),
+        revenue: r.revenue,
+        commission: r.commission,
+      }));
     } else {
       const resultMap = {};
       result.forEach((r) => {
@@ -230,20 +226,18 @@ const getRevenueReport = async (req, res, next) => {
 
       for (let i = 1; i <= fullLabels.length; i++) {
         const data = resultMap[i] || { revenue: 0, commission: 0 };
-        revenue.push(data.revenue);
-        commission.push(data.commission);
-        labels.push(fullLabels[i - 1]);
+        report.push({
+          [filter === "week" ? "day" : "month"]: fullLabels[i - 1],
+          revenue: data.revenue,
+          commission: data.commission,
+        });
       }
     }
 
     return res.status(200).json({
       status: true,
-      data: {
-        revenue,
-        commission,
-        labels,
-        filter,
-      },
+      data: report,
+      filter,
     });
   } catch (err) {
     console.error("Revenue aggregation error:", err);
@@ -262,17 +256,17 @@ const getVendorStats = async (req, res, next) => {
       paymentStatus: "Completed",
     };
 
-    const groupStage = {};
-    const labelMap = [];
-    const sortStage = {};
+    let groupId,
+      fullLabels = [],
+      labelKey;
 
     if (filter === "week") {
-      groupStage._id = { $dayOfWeek: "$createdAt" };
-      labelMap.push("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat");
-      sortStage["_id"] = 1;
+      groupId = { $dayOfWeek: "$createdAt" };
+      fullLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      labelKey = "day";
     } else if (filter === "month") {
-      groupStage._id = { $month: "$createdAt" };
-      labelMap.push(
+      groupId = { $month: "$createdAt" };
+      fullLabels = [
         "Jan",
         "Feb",
         "Mar",
@@ -284,16 +278,15 @@ const getVendorStats = async (req, res, next) => {
         "Sep",
         "Oct",
         "Nov",
-        "Dec"
-      );
-      sortStage["_id"] = 1;
+        "Dec",
+      ];
+      labelKey = "month";
     } else if (filter === "year") {
-      groupStage._id = { $year: "$createdAt" };
-      sortStage["_id"] = 1;
+      groupId = { $year: "$createdAt" };
+      labelKey = "period"; // For year, we'll just use the year number as a string
+    } else {
+      return res.status(400).json({ status: false, message: "Invalid filter" });
     }
-
-    groupStage.revenue = { $sum: "$amount" };
-    groupStage.commission = { $sum: "$commissionAmount" };
 
     const [totalProducts, totalOrders, paymentStats, graphStats] =
       await Promise.all([
@@ -311,26 +304,43 @@ const getVendorStats = async (req, res, next) => {
         ]),
         paymentmodal.aggregate([
           { $match: matchStage },
-          { $group: groupStage },
-          { $sort: sortStage },
+          {
+            $group: {
+              _id: groupId,
+              revenue: { $sum: "$amount" },
+              commission: { $sum: "$commissionAmount" },
+            },
+          },
+          { $sort: { _id: 1 } },
         ]),
       ]);
 
-    const revenue = [];
-    const commission = [];
-    const labels = [];
+    const resultMap = {};
+    graphStats.forEach((entry) => {
+      resultMap[entry._id] = {
+        revenue: entry.revenue,
+        commission: entry.commission,
+      };
+    });
+
+    const graph = [];
 
     if (filter === "week" || filter === "month") {
-      graphStats.forEach((entry) => {
-        labels.push(labelMap[entry._id - (filter === "week" ? 1 : 1)]);
-        revenue.push(entry.revenue);
-        commission.push(entry.commission);
-      });
+      for (let i = 1; i <= fullLabels.length; i++) {
+        const data = resultMap[i] || { revenue: 0, commission: 0 };
+        graph.push({
+          [labelKey]: fullLabels[i - 1],
+          revenue: data.revenue,
+          commission: data.commission,
+        });
+      }
     } else if (filter === "year") {
       graphStats.forEach((entry) => {
-        labels.push(entry._id.toString());
-        revenue.push(entry.revenue);
-        commission.push(entry.commission);
+        graph.push({
+          [labelKey]: entry._id.toString(),
+          revenue: entry.revenue,
+          commission: entry.commission,
+        });
       });
     }
 
@@ -344,12 +354,8 @@ const getVendorStats = async (req, res, next) => {
         totalRevenue,
         totalCommission,
       },
-      graph: {
-        revenue,
-        commission,
-        labels,
-        filter,
-      },
+      graph,
+      filter,
     });
   } catch (err) {
     console.error("Vendor Stats Error:", err);

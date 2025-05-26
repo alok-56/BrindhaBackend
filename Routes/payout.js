@@ -5,6 +5,7 @@ const {
   FetchAllpaymentsforpayout,
   CreatePayout,
   FetchPaidPayouts,
+  getPlatformFinanceSummary,
 } = require("../Controllers/SuperAdmin/payout");
 const { IsVendor } = require("../Middleware/IsVendor");
 const { FetchVendorPayouts, FetchVendorOrderPayments } = require("../Controllers/Vendor/payout");
@@ -16,6 +17,8 @@ PayoutRouter.get("/fetch/pending", IsSuperAdmin, FetchAllpaymentsforpayout);
 PayoutRouter.post("/create/payout", IsSuperAdmin, CreatePayout);
 
 PayoutRouter.get("/fetch/paid", IsSuperAdmin, FetchPaidPayouts);
+
+PayoutRouter.get("/summary/payout", IsSuperAdmin, getPlatformFinanceSummary);
 
 // Vendor
 

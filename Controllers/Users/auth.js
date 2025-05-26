@@ -2,6 +2,7 @@ const { validationResult } = require("express-validator");
 const AppErr = require("../../Helper/appError");
 const { generateToken } = require("../../Helper/generateToken");
 const UserModel = require("../../Models/User/user");
+const SendEmail = require("../../Helper/Email/sendEmail");
 
 // Create Super Admin
 const CreateUser = async (req, res, next) => {
@@ -159,10 +160,67 @@ const LoginUser = async (req, res, next) => {
   }
 };
 
+// Login With Google
+
+// Send Otp
+const SendOtp = async (req, res, next) => {
+  try {
+    let { Email } = req.body;
+
+    // Check if user exists
+    let email = await UserModel.findOne({ Email: Email });
+    if (!email) {
+      return next(new AppErr("User Not Found", 400));
+    }
+
+    // Generate a random 5-digit OTP
+    const otp = Math.floor(10000 + Math.random() * 90000).toString();
+    await SendEmail(Email, "OTP", email.Username, { otp: otp });
+
+    res
+      .status(200)
+      .json({ status: true, code: 200, message: "OTP sent successfully", otp });
+  } catch (error) {
+    return next(new AppErr(error.message, 500));
+  }
+};
+
+// Forget Password
+const ForgetPassword = async (req, res, next) => {
+  try {
+    let { Email, Password } = req.body;
+
+    let email = await UserModel.findOne({
+      Email: Email,
+    });
+    if (!email) {
+      return next(new AppErr("User Not Found", 400));
+    }
+
+    const update = {};
+    if (Password) update.Password = Password;
+
+    // Create super admin
+    let User = await UserModel.findByIdAndUpdate(email._id, update, {
+      new: true,
+    });
+
+    return res.status(200).json({
+      status: true,
+      code: 200,
+      message: "Password Changed Successfully",
+    });
+  } catch (error) {
+    return next(new AppErr(error.message, 500));
+  }
+};
+
 module.exports = {
   CreateUser,
   UpdateUser,
   GetMyData,
   DeleteUser,
   LoginUser,
+  SendOtp,
+  ForgetPassword,
 };

@@ -222,8 +222,79 @@ const FetchPaidPayouts = async (req, res, next) => {
   }
 };
 
+const getPlatformFinanceSummary = async (req, res, next) => {
+  try {
+    // 1. Completed payments - total amount and commission
+    const [paymentStats] = await paymentmodal.aggregate([
+      {
+        $match: {
+          paymentStatus: "Completed",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalVendorAmount: { $sum: "$amount" },
+          totalCommission: { $sum: "$commissionAmount" },
+        },
+      },
+    ]);
+
+    // 2. Completed payouts - total withdrawn
+    const [withdrawStats] = await payoutmodal.aggregate([
+      {
+        $match: {
+          status: "Completed",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalWithdrawn: { $sum: "$totalAmount" },
+        },
+      },
+    ]);
+
+    // 3. Pending payouts - payments not yet paid out
+    const [pendingStats] = await paymentmodal.aggregate([
+      {
+        $match: {
+          payout: false,
+          paymentStatus: "Completed",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalPendingPayout: { $sum: "$amount" },
+        },
+      },
+    ]);
+
+    const summary = {
+      totalVendorAmount: paymentStats?.totalVendorAmount || 0,
+      totalCommission: paymentStats?.totalCommission || 0,
+      totalWithdrawn: withdrawStats?.totalWithdrawn || 0,
+      totalPendingPayout: pendingStats?.totalPendingPayout || 0,
+    };
+
+    return res.status(200).json({
+      status: true,
+      code: 200,
+      summary,
+    });
+  } catch (error) {
+    console.error("Platform finance summary error:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Server error",
+    });
+  }
+};
+
 module.exports = {
   FetchAllpaymentsforpayout,
   FetchPaidPayouts,
   CreatePayout,
+  getPlatformFinanceSummary,
 };

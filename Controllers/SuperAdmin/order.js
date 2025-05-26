@@ -2,40 +2,7 @@ const AppErr = require("../../Helper/appError");
 const orderModal = require("../../Models/Order/order");
 const paymentmodal = require("../../Models/Order/payment");
 
-// Get All Order
-// const FetchAllorderbySuper = async (req, res, next) => {
-//   try {
-//     let page = parseInt(req.query.page) || 1;
-//     let limit = parseInt(req.query.limit) || 10;
-//     let skip = (page - 1) * limit;
-
-//     // Get total count
-//     const total = await paymentmodal.countDocuments();
-
-//     // Fetch paginated results
-//     let orders = await paymentmodal
-//       .find()
-//       .populate("orderId")
-//       .skip(skip)
-//       .limit(limit)
-//       .sort({ createdAt: -1 });
-
-//     return res.status(200).json({
-//       status: true,
-//       message: "Orders fetched successfully",
-//       data: orders,
-//       pagination: {
-//         totalRecords: total,
-//         currentPage: page,
-//         totalPages: Math.ceil(total / limit),
-//         perPage: limit,
-//       },
-//     });
-//   } catch (error) {
-//     return next(new AppErr(error.message, 500));
-//   }
-// };
-
+// Fetch All order
 const FetchAllorderbySuper = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page) || 1;
