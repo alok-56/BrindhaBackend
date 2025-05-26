@@ -5,6 +5,7 @@ const {
   CreateOrder,
   VerifyOrder,
   GetMyorder,
+  UpdateLockStock,
 } = require("../Controllers/Users/order");
 const { IsVendor } = require("../Middleware/IsVendor");
 const {
@@ -24,11 +25,7 @@ const { IsSuperAdmin } = require("../Middleware/IsSuperAdmin");
 const OrderRouter = express.Router();
 
 // Order create
-OrderRouter.post(
-  "/create/order",
-  IsUser,
-  CreateOrder
-);
+OrderRouter.post("/create/order", IsUser, CreateOrder);
 
 // Order verify
 OrderRouter.post(
@@ -47,6 +44,9 @@ OrderRouter.post(
 
 // My Order
 OrderRouter.get("/my/order", IsUser, GetMyorder);
+
+// Update Lock
+OrderRouter.patch("/order/lock/update", IsUser, UpdateLockStock);
 
 // <!--------------------------VENDOR----------------------------->
 

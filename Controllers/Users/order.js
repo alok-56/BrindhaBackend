@@ -193,10 +193,10 @@ const GetMyorder = async (req, res, next) => {
       .populate({
         path: "orderId",
         populate: {
-          path: "subOrders.products.productId", 
+          path: "subOrders.products.productId",
         },
       })
-      .populate("vendorId") 
+      .populate("vendorId")
       .lean();
 
     const formattedOrders = [];
@@ -264,10 +264,48 @@ const GetMyorder = async (req, res, next) => {
 };
 
 // Update Lockstock
+const UpdateLockStock = async (req, res, next) => {
+  try {
+    const { subOrders } = req.body;
 
+    if (!subOrders) {
+      return next(new AppErr("subOrders is required", 404));
+    }
+
+    for (const sub of subOrders) {
+      for (const item of sub.products) {
+        const product = await ProductModel.findById(item.productId);
+        if (!product) {
+          return next(new AppErr("Product not found", 404));
+        }
+
+        const availableStock = product.Stock - (product.LockStock || 0);
+        if (availableStock < item.quantity) {
+          return next(new AppErr(`${product.Name} is out of stock`, 400));
+        }
+
+        await ProductModel.updateOne(
+          { _id: item.productId },
+          {
+            $inc: { LockStock: -item.quantity },
+          }
+        );
+      }
+    }
+
+    return res.status(200).json({
+      status: true,
+      code: 200,
+      message: "Lock Updated successfully",
+    });
+  } catch (error) {
+    return next(new AppErr(error.message, 500));
+  }
+};
 
 module.exports = {
   CreateOrder,
   VerifyOrder,
   GetMyorder,
+  UpdateLockStock
 };
