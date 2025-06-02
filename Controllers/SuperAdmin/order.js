@@ -12,6 +12,7 @@ const FetchAllorderbySuper = async (req, res, next) => {
     const data = await orderModal.aggregate([
       { $unwind: "$subOrders" },
 
+      // Join with payments collection
       {
         $lookup: {
           from: "payments",
@@ -40,12 +41,44 @@ const FetchAllorderbySuper = async (req, res, next) => {
           preserveNullAndEmptyArrays: true,
         },
       },
+
+      // Join with users collection
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$userDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
+      // Join with shipingaddress collection
+      {
+        $lookup: {
+          from: "shipingaddresses", // MongoDB auto-pluralizes "shipingaddress"
+          localField: "userId",
+          foreignField: "UserId",
+          as: "shippingDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$shippingDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
       {
         $project: {
           _id: 0,
           orderId: "$_id",
           userId: 1,
-          ShipingAddress: 1,
           vendorId: "$subOrders.vendorId",
           products: "$subOrders.products",
           subOrderStatus: "$subOrders.status",
@@ -53,8 +86,22 @@ const FetchAllorderbySuper = async (req, res, next) => {
           deliveryCharge: "$subOrders.deliveryCharge",
           returnStatus: "$subOrders.ReturnStatus",
           payment: "$payment",
+          userDetails: {
+            Username: "$userDetails.Username",
+            Email: "$userDetails.Email",
+            Number: "$userDetails.Number",
+            UserType: "$userDetails.UserType",
+          },
+          shippingDetails: {
+            FullAddress: "$shippingDetails.FullAddress",
+            Country: "$shippingDetails.Country",
+            State: "$shippingDetails.State",
+            City: "$shippingDetails.City",
+            Pincode: "$shippingDetails.Pincode",
+          },
         },
       },
+
       { $sort: { "payment.createdAt": -1 } },
       { $skip: skip },
       { $limit: limit },
@@ -67,7 +114,7 @@ const FetchAllorderbySuper = async (req, res, next) => {
 
     return res.status(200).json({
       status: true,
-      message: "SubOrders with payments fetched successfully",
+      message: "SubOrders with payments, user, and shipping details fetched successfully",
       data,
       pagination: {
         totalRecords: total[0]?.total || 0,

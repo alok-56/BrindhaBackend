@@ -97,7 +97,7 @@ const Updatesubcateogries = async (req, res, next) => {
 // Get All subcateogries
 const GetAllsubcateogries = async (req, res, next) => {
   try {
-    let subcateogries = await SubcategoryModel.find();
+    let subcateogries = await SubcategoryModel.find().populate("CategoryId")
     return res.status(200).json({
       status: true,
       code: 200,
@@ -117,7 +117,7 @@ const GetsubcateogriesById = async (req, res, next) => {
       return next(new AppErr("Id not found", 404));
     }
 
-    let subcateogries = await SubcategoryModel.findById(id);
+    let subcateogries = await SubcategoryModel.findById(id).populate("CategoryId")
     return res.status(200).json({
       status: true,
       code: 200,
