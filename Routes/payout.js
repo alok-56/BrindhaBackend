@@ -8,7 +8,10 @@ const {
   getPlatformFinanceSummary,
 } = require("../Controllers/SuperAdmin/payout");
 const { IsVendor } = require("../Middleware/IsVendor");
-const { FetchVendorPayouts, FetchVendorOrderPayments } = require("../Controllers/Vendor/payout");
+const {
+  FetchVendorPayouts,
+  FetchVendorOrderPayments,
+} = require("../Controllers/Vendor/payout");
 
 const PayoutRouter = express.Router();
 
@@ -24,8 +27,10 @@ PayoutRouter.get("/summary/payout", IsSuperAdmin, getPlatformFinanceSummary);
 
 PayoutRouter.get("/fetch/vendor/payout", IsVendor, FetchVendorPayouts);
 
-PayoutRouter.get("/fetch/user/order/payment", IsVendor, FetchVendorOrderPayments);
-
-
+PayoutRouter.get(
+  "/fetch/user/order/payment",
+  IsVendor,
+  FetchVendorOrderPayments
+);
 
 module.exports = PayoutRouter;
