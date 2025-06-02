@@ -30,6 +30,7 @@ const TicketSchema = mongoose.Schema(
         date: String,
         document: String,
         user: String,
+        role:String
       },
     ],
   },
