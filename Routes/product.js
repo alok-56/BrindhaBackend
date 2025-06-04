@@ -14,6 +14,7 @@ const { IsSuperAdmin } = require("../Middleware/IsSuperAdmin");
 const {
   FetchAllProduct,
   ApproveRejectProducts,
+  GetProductByIdSuper,
 } = require("../Controllers/SuperAdmin/product");
 const { IsUser } = require("../Middleware/IsUser");
 const {
@@ -46,7 +47,6 @@ ProductRouter.patch(
   UpdateProduct
 );
 
-// fetch categeory by vendor
 
 //Send for verification add
 ProductRouter.patch(
@@ -84,6 +84,9 @@ ProductRouter.get(
 
 // Fetch All products super admin
 ProductRouter.get("/get/products", IsSuperAdmin, FetchAllProduct);
+
+// Fetch product by Id
+ProductRouter.get("/get/products/:id", IsSuperAdmin, GetProductByIdSuper);
 
 // Approve/Reject Products
 ProductRouter.patch(

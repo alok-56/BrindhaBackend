@@ -101,7 +101,27 @@ const ApproveRejectProducts = async (req, res, next) => {
   }
 };
 
+// get Product By Id
+
+ const GetProductByIdSuper = async (req, res, next) => {
+  try {
+    let { id } = req.params;
+
+    let product = await ProductModel.findById(id);
+
+    return res.status(200).json({
+      status: true,
+      code: 200,
+      message: "Products Fetched successfully.",
+      data: product,
+    });
+  } catch (error) {
+    return new AppErr(error.message, 500);
+  }
+};
+
 module.exports = {
   FetchAllProduct,
   ApproveRejectProducts,
+  GetProductByIdSuper
 };

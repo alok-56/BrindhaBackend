@@ -17,56 +17,82 @@ const razorpay = new Razorpay({
 const FetchAllpaymentsforpayout = async (req, res, next) => {
   try {
     const result = await paymentmodal.aggregate([
-      {
-        $match: { payout: false },
-      },
-      {
-        $lookup: {
-          from: "orders",
-          localField: "orderId",
-          foreignField: "_id",
-          as: "order",
-        },
-      },
-      { $unwind: "$order" },
-      {
-        $addFields: {
-          matchedSubOrder: {
-            $filter: {
-              input: "$order.subOrders",
-              as: "subOrder",
-              cond: {
-                $and: [
-                  { $eq: ["$$subOrder.vendorId", "$vendorId"] },
-                  { $eq: ["$$subOrder.status", "Pending"] },
-                ],
-              },
-            },
+  {
+    $match: { payout: false },
+  },
+  {
+    $lookup: {
+      from: "orders",
+      localField: "orderId",
+      foreignField: "_id",
+      as: "order",
+    },
+  },
+  {
+    $unwind: "$order",
+  },
+  {
+    $addFields: {
+      matchedSubOrder: {
+        $filter: {
+          input: "$order.subOrders",
+          as: "subOrder",
+          cond: {
+            $and: [
+              { $eq: ["$$subOrder.vendorId", "$vendorId"] },
+              { $eq: ["$$subOrder.status", "Pending"] },
+            ],
           },
         },
       },
-      {
-        $match: { matchedSubOrder: { $ne: [] } },
-      },
-      {
-        $group: {
-          _id: "$vendorId",
-          totalPayoutAmount: { $sum: "$amount" },
-          totalOrdersCount: { $sum: 1 },
-          orderIds: { $addToSet: "$orderId" },
-          payments: { $push: "$$ROOT" },
-        },
-      },
-      {
-        $lookup: {
-          from: "vendors",
-          localField: "_id",
-          foreignField: "_id",
-          as: "vendorInfo",
-        },
-      },
-      { $unwind: { path: "$vendorInfo", preserveNullAndEmptyArrays: true } },
-    ]);
+    },
+  },
+  {
+    $match: {
+      matchedSubOrder: { $ne: [] },
+    },
+  },
+  {
+    $group: {
+      _id: "$vendorId", // group by vendorId
+      totalPayoutAmount: { $sum: "$amount" },
+      totalOrdersCount: { $sum: 1 },
+      orderIds: { $addToSet: "$orderId" },
+      payments: { $push: "$$ROOT" },
+    },
+  },
+  {
+    $lookup: {
+      from: "vendors",
+      localField: "_id",       // _id is vendorId
+      foreignField: "_id",     // match with vendors._id
+      as: "vendor",
+    },
+  },
+  {
+    $unwind: {
+      path: "$vendor",
+      preserveNullAndEmptyArrays: true,
+    },
+  },
+  {
+    $addFields: {
+      vendorId: "$_id", // for clarity if you want vendorId explicitly
+    },
+  },
+  {
+    $project: {
+      _id: 0, // optionally remove MongoDB's default _id
+      vendorId: 1,
+      vendor: 1,
+      totalPayoutAmount: 1,
+      totalOrdersCount: 1,
+      orderIds: 1,
+      payments: 1,
+    },
+  },
+]);
+
 
     return res.status(200).json({
       status: true,
@@ -127,7 +153,7 @@ const CreatePayout = async (req, res, next) => {
     }
 
     const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0); // rupees
-    const amountInPaise = totalAmount * 100; // convert to paise
+    const amountInPaise = totalAmount * 100; 
     const paymentIds = payments.map((p) => p._id);
 
     const vendor = await VendorModel.findById(vendorId).populate("CompanyId");
@@ -210,7 +236,10 @@ const CreatePayout = async (req, res, next) => {
 
 const FetchPaidPayouts = async (req, res, next) => {
   try {
-    let response = await payoutmodal.find();
+    let response = await payoutmodal
+      .find()
+      .populate("vendorId")
+      .populate("payments");
     return res.status(200).json({
       status: true,
       code: 200,
