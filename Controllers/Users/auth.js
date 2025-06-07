@@ -193,7 +193,7 @@ const loginWithGoogle = async (req, res, next) => {
         status: true,
         code: 200,
         message: "Login Successfully",
-        data: User,
+        data: email,
         token: token,
       });
     }
