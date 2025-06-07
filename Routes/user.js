@@ -9,6 +9,7 @@ const {
   DeleteUser,
   SendOtp,
   ForgetPassword,
+  loginWithGoogle,
 } = require("../Controllers/Users/auth");
 const {
   CreateShippingAddress,
@@ -43,6 +44,14 @@ UserRouter.post(
   body("Email").notEmpty().withMessage("Email is required"),
   body("Password").notEmpty().withMessage("Password is required"),
   LoginUser
+);
+
+// login with google
+UserRouter.post(
+  "/login/withgoogle",
+  body("Email").notEmpty().withMessage("Email is required"),
+  body("Password").notEmpty().withMessage("Password is required"),
+  loginWithGoogle
 );
 
 // GetUserby Id

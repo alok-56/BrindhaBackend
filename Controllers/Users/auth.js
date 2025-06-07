@@ -40,7 +40,7 @@ const CreateUser = async (req, res, next) => {
   }
 };
 
-// Update Super Admin
+// Update User
 const UpdateUser = async (req, res, next) => {
   try {
     let { Username, Email, Number, Password, UserType } = req.body;
@@ -108,7 +108,7 @@ const GetMyData = async (req, res, next) => {
   }
 };
 
-// Delete Super Admin
+// Delete User
 const DeleteUser = async (req, res, next) => {
   try {
     let { id } = req.params;
@@ -126,7 +126,7 @@ const DeleteUser = async (req, res, next) => {
   }
 };
 
-// Login Super Admin
+// Login User
 const LoginUser = async (req, res, next) => {
   try {
     let err = validationResult(req);
@@ -161,6 +161,47 @@ const LoginUser = async (req, res, next) => {
 };
 
 // Login With Google
+const loginWithGoogle = async (req, res, next) => {
+  try {
+    let err = validationResult(req);
+    if (err.errors.length > 0) {
+      return next(new AppErr(err.errors[0].msg, 403));
+    }
+
+    let { Username, Email, Password } = req.body;
+
+    // Email Check
+    let email = await UserModel.findOne({ Email: Email });
+    if (!email) {
+      let User = await UserModel.create({
+        Username: Username,
+        Email: Email,
+        Password: Password,
+      });
+
+      let token = await generateToken(User._id);
+      return res.status(200).json({
+        status: true,
+        code: 200,
+        message: "Login Successfully",
+        data: User,
+        token: token,
+      });
+    } else {
+      let token = await generateToken(email._id);
+      return res.status(200).json({
+        status: true,
+        code: 200,
+        message: "Login Successfully",
+        data: User,
+        token: token,
+      });
+    }
+
+  } catch (error) {
+    return next(new AppErr(error.message, 500));
+  }
+};
 
 // Send Otp
 const SendOtp = async (req, res, next) => {
@@ -223,4 +264,5 @@ module.exports = {
   LoginUser,
   SendOtp,
   ForgetPassword,
+  loginWithGoogle
 };
