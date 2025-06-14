@@ -8,9 +8,15 @@ const FetchAllorderbySuper = async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    const statusFilter = req.query.status;
+
+    const matchStage = statusFilter
+      ? { $match: { "subOrders.status": statusFilter } }
+      : { $match: {} };
 
     const data = await orderModal.aggregate([
       { $unwind: "$subOrders" },
+      matchStage,
 
       // Join with payments collection
       {
@@ -58,10 +64,10 @@ const FetchAllorderbySuper = async (req, res, next) => {
         },
       },
 
-      // Join with shipingaddress collection
+      // Join with shipping address collection
       {
         $lookup: {
-          from: "shipingaddresses", // MongoDB auto-pluralizes "shipingaddress"
+          from: "shipingaddresses",
           localField: "userId",
           foreignField: "UserId",
           as: "shippingDetails",
@@ -107,8 +113,10 @@ const FetchAllorderbySuper = async (req, res, next) => {
       { $limit: limit },
     ]);
 
+    // Count total with same match condition
     const total = await orderModal.aggregate([
       { $unwind: "$subOrders" },
+      ...(statusFilter ? [{ $match: { "subOrders.status": statusFilter } }] : []),
       { $count: "total" },
     ]);
 
@@ -128,6 +136,7 @@ const FetchAllorderbySuper = async (req, res, next) => {
   }
 };
 
+
 // Get Order By Id
 const GetOrderByOrderId = async (req, res, next) => {
   try {
@@ -140,7 +149,30 @@ const GetOrderByOrderId = async (req, res, next) => {
       });
     }
 
-    const order = await paymentmodal.findById(id).populate("orderId");
+   const order = await paymentmodal.findById(id)
+  .populate({
+    path: "orderId",
+    populate: [
+      {
+        path: "userId",
+        model: "user", 
+      },
+      {
+        path: "ShipingAddress",
+        model: "shipingaddress", 
+      },
+      {
+        path: "subOrders.vendorId",
+        model: "vendor", 
+      },
+      {
+        path: "subOrders.products.productId",
+        model: "Product", 
+      }
+    ]
+  });
+
+
 
     if (!order || order.length === 0) {
       return res.status(404).json({
