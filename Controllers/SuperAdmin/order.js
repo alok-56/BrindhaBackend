@@ -136,7 +136,6 @@ const FetchAllorderbySuper = async (req, res, next) => {
   }
 };
 
-
 // Get Order By Id
 const GetOrderByOrderId = async (req, res, next) => {
   try {
