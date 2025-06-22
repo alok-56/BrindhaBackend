@@ -8,6 +8,7 @@ const {
   AllProductbyVendor,
   GetProductById,
   UpdateProduct,
+  getVendorProductStatsApi,
 } = require("../Controllers/Vendor/product");
 const { IsVendorVerified } = require("../Middleware/IsVendorverified");
 const { IsSuperAdmin } = require("../Middleware/IsSuperAdmin");
@@ -39,6 +40,14 @@ ProductRouter.post(
   CreateProduct
 );
 
+// Count Product Api
+ProductRouter.get(
+  "/count/products",
+  IsVendor,
+  IsVendorVerified,
+  getVendorProductStatsApi
+);
+
 //Update Product
 ProductRouter.patch(
   "/update/products/:id",
@@ -46,7 +55,6 @@ ProductRouter.patch(
   IsVendorVerified,
   UpdateProduct
 );
-
 
 //Send for verification add
 ProductRouter.patch(
@@ -101,7 +109,5 @@ ProductRouter.get("/users/get/products", IsUser, FetchAllUserProduct);
 
 // Fetch Product by Id
 ProductRouter.get("/users/get/product/:id", IsUser, FetchUserProductById);
-
-// Fetch Cateogery
 
 module.exports = ProductRouter;

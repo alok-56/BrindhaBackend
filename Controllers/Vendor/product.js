@@ -276,6 +276,38 @@ const UpdateProduct = async (req, res, next) => {
   }
 };
 
+// Count Api
+const getVendorProductStatsApi = async (req, res, next) => {
+  try {
+    const vendorId = req.user; // Assumes vendor ID is set in `req.user`
+
+    if (!vendorId) {
+      return next(new AppErr("Vendor not authenticated", 401));
+    }
+
+    const matchStage = { VendorId: vendorId };
+
+    const totalProducts = await ProductModel.countDocuments(matchStage);
+
+    const [categoryStats, subcategoryStats] = await Promise.all([
+      ProductModel.distinct("CategoryId", matchStage),
+      ProductModel.distinct("SubcategoryId", matchStage),
+    ]);
+
+    return res.status(200).json({
+      status: true,
+      message: "Vendor product stats fetched successfully",
+      data: {
+        totalProducts,
+        categoryCount: categoryStats.length,
+        subcategoryCount: subcategoryStats.length,
+      },
+    });
+  } catch (err) {
+    return next(new AppErr(err.message, 500));
+  }
+};
+
 module.exports = {
   CreateProduct,
   SendProductForVerification,
@@ -283,4 +315,5 @@ module.exports = {
   AllProductbyVendor,
   GetProductById,
   UpdateProduct,
+  getVendorProductStatsApi
 };

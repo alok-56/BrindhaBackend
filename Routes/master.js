@@ -111,7 +111,7 @@ MasteradminRouter.get("/get/cateogries", IsSuperAdmin, GetAllcateogries);
 MasteradminRouter.get("/users/get/cateogries", IsUser, GetAllcateogries);
 
 // Get Cateogies by vendor
-MasteradminRouter.get("/vendor/get/cateogries", IsVendor, GetAllcateogries);
+MasteradminRouter.get("/vendor/get/cateogries", IsVendor, GetAllsubcateogries);
 
 // Get cateogries by Id
 MasteradminRouter.get("/get/cateogries/:id", IsSuperAdmin, GetcateogriesById);

@@ -13,15 +13,119 @@ const razorpay = new Razorpay({
 });
 
 // Get All Order of Vendor
+// const GetAllorder = async (req, res, next) => {
+//   try {
+//     const vendorId = req.user;
+
+//     const orders = await orderModal.find({
+//       "subOrders.vendorId": vendorId,
+//     });
+
+//     // Step 1: Collect all productIds from matching subOrders
+//     const allProductIds = [];
+//     orders.forEach((order) => {
+//       order.subOrders.forEach((subOrder) => {
+//         if (subOrder.vendorId.toString() === vendorId.toString()) {
+//           subOrder.products.forEach((product) => {
+//             allProductIds.push(product.productId.toString());
+//           });
+//         }
+//       });
+//     });
+
+//     // Step 2: Fetch product details
+//     const productDetails = await ProductModel.find({
+//       _id: { $in: allProductIds },
+//     }).lean();
+
+//     const productMap = {};
+//     productDetails.forEach((product) => {
+//       productMap[product._id.toString()] = product;
+//     });
+
+//     // Step 3: Build response
+//     const vendorOrders = orders.map((order) => {
+//       const matchingSubOrders = order.subOrders
+//         .filter(
+//           (subOrder) => subOrder.vendorId.toString() === vendorId.toString()
+//         )
+//         .map((subOrder) => {
+//           const enrichedProducts = subOrder.products.map((product) => ({
+//             ...product.toObject(),
+//             productDetails: productMap[product.productId.toString()] || null,
+//           }));
+
+//           return {
+//             ...subOrder.toObject(),
+//             products: enrichedProducts,
+//           };
+//         });
+
+//       return {
+//         orderId: order._id,
+//         userId: order.userId,
+//         paymentMode: order.paymentMode,
+//         paymentStatus: order.paymentStatus,
+//         createdAt: order.createdAt,
+//         vendorSubOrders: matchingSubOrders,
+//       };
+//     });
+
+//     res.status(200).json({
+//       status: 200,
+//       message: "Orders fetched successfully",
+//       data: vendorOrders,
+//     });
+//   } catch (error) {
+//     return next(new AppErr(error.message, 500));
+//   }
+// };
+
 const GetAllorder = async (req, res, next) => {
   try {
-    const vendorId = req.user; // assuming vendorId is injected via auth middleware
+    const vendorId = req.user;
+    const filter = req.query.filter; // 'today', 'week', 'month', 'year'
 
+    const dateFilter = {};
+    const now = moment();
+
+    // Set date filter range if provided
+    if (filter === "today") {
+      dateFilter.createdAt = {
+        $gte: now.clone().startOf("day").toDate(),
+        $lt: now.clone().endOf("day").toDate(),
+      };
+    } else if (filter === "week") {
+      dateFilter.createdAt = {
+        $gte: now.clone().startOf("week").toDate(),
+        $lt: now.clone().endOf("week").toDate(),
+      };
+    } else if (filter === "month") {
+      dateFilter.createdAt = {
+        $gte: now.clone().startOf("month").toDate(),
+        $lt: now.clone().endOf("month").toDate(),
+      };
+    } else if (filter === "year") {
+      dateFilter.createdAt = {
+        $gte: now.clone().startOf("year").toDate(),
+        $lt: now.clone().endOf("year").toDate(),
+      };
+    } else if (filter && !["today", "week", "month", "year"].includes(filter)) {
+      return next(
+        new AppErr(
+          "Invalid filter. Use 'today', 'week', 'month', or 'year'.",
+          400
+        )
+      );
+    }
+
+    // Fetch orders with vendor's subOrders and optional date filter
     const orders = await orderModal.find({
       "subOrders.vendorId": vendorId,
+      ...dateFilter,
     });
 
-    // Step 1: Collect all productIds from matching subOrders
+    // Collect productIds from matching subOrders
     const allProductIds = [];
     orders.forEach((order) => {
       order.subOrders.forEach((subOrder) => {
@@ -33,7 +137,7 @@ const GetAllorder = async (req, res, next) => {
       });
     });
 
-    // Step 2: Fetch product details
+    // Fetch product details
     const productDetails = await ProductModel.find({
       _id: { $in: allProductIds },
     }).lean();
@@ -43,7 +147,7 @@ const GetAllorder = async (req, res, next) => {
       productMap[product._id.toString()] = product;
     });
 
-    // Step 3: Build response
+    // Build response
     const vendorOrders = orders.map((order) => {
       const matchingSubOrders = order.subOrders
         .filter(
@@ -315,19 +419,19 @@ const VendorEarningsStatsApi = async (req, res, next) => {
       return next(new AppErr("Filter must be 'week' or 'month'", 400));
     }
 
-    // Match payments for vendor with completed status — no year filter
     const matchStage = {
       vendorId,
       paymentStatus: "Completed",
     };
 
-    let groupStage, labelMap, formatLabel;
+    let groupStage, labelMap, formatLabel, resultKey;
 
     if (filter === "week") {
       groupStage = { _id: { $dayOfWeek: "$createdAt" } };
       labelMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      resultKey = "day";
       formatLabel = (id) => labelMap[id - 1];
-    } else if (filter === "month") {
+    } else {
       groupStage = { _id: { $month: "$createdAt" } };
       labelMap = [
         "Jan",
@@ -343,6 +447,7 @@ const VendorEarningsStatsApi = async (req, res, next) => {
         "Nov",
         "Dec",
       ];
+      resultKey = "month";
       formatLabel = (id) => labelMap[id - 1];
     }
 
@@ -352,14 +457,26 @@ const VendorEarningsStatsApi = async (req, res, next) => {
       { $sort: { _id: 1 } },
     ]);
 
+    // Initialize all values with 0
+    const earningsMap = {};
+    labelMap.forEach((label) => {
+      earningsMap[label] = 0;
+    });
+
+    payments.forEach((p) => {
+      const label = formatLabel(p._id);
+      earningsMap[label] = p.totalAmount;
+    });
+
+    const formatted = labelMap.map((label) => ({
+      [resultKey]: label,
+      earning: earningsMap[label],
+    }));
+
     return res.status(200).json({
       status: true,
-      code: 200,
-      message: "Vendor earnings stats fetched successfully",
-      data: {
-        labels: payments.map((p) => formatLabel(p._id)),
-        data: payments.map((p) => p.totalAmount),
-      },
+      data: formatted,
+      filter,
     });
   } catch (err) {
     return next(new AppErr(err.message, 500));
@@ -376,10 +493,8 @@ const VendorOrderStatsApi = async (req, res, next) => {
       return next(new AppErr("Filter must be 'week' or 'month'", 400));
     }
 
-    // Match all orders — no year filter here either
     const matchStage = {};
-
-    let projectStage, groupStage, labelMap, formatLabel;
+    let projectStage, groupStage, labelMap, formatLabel, resultKey;
 
     if (filter === "week") {
       projectStage = {
@@ -388,8 +503,9 @@ const VendorOrderStatsApi = async (req, res, next) => {
       };
       groupStage = { _id: "$day" };
       labelMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      resultKey = "day";
       formatLabel = (id) => labelMap[id - 1];
-    } else if (filter === "month") {
+    } else {
       projectStage = {
         month: { $month: "$createdAt" },
         "subOrders.vendorId": 1,
@@ -409,6 +525,7 @@ const VendorOrderStatsApi = async (req, res, next) => {
         "Nov",
         "Dec",
       ];
+      resultKey = "month";
       formatLabel = (id) => labelMap[id - 1];
     }
 
@@ -421,14 +538,25 @@ const VendorOrderStatsApi = async (req, res, next) => {
       { $sort: { _id: 1 } },
     ]);
 
+    const ordersMap = {};
+    labelMap.forEach((label) => {
+      ordersMap[label] = 0;
+    });
+
+    orders.forEach((o) => {
+      const label = formatLabel(o._id);
+      ordersMap[label] = o.count;
+    });
+
+    const formatted = labelMap.map((label) => ({
+      [resultKey]: label,
+      orders: ordersMap[label],
+    }));
+
     return res.status(200).json({
       status: true,
-      code: 200,
-      message: "Vendor order stats fetched successfully",
-      data: {
-        labels: orders.map((o) => formatLabel(o._id)),
-        data: orders.map((o) => o.count),
-      },
+      data: formatted,
+      filter,
     });
   } catch (err) {
     return next(new AppErr(err.message, 500));
@@ -487,5 +615,5 @@ module.exports = {
   VendorsOrderCountApi,
   VendorEarningsStatsApi,
   VendorOrderStatsApi,
-  getCancelledOrdersofVendor
+  getCancelledOrdersofVendor,
 };

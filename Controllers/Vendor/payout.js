@@ -68,7 +68,51 @@ const FetchVendorOrderPayments = async (req, res, next) => {
   }
 };
 
+// payout count api
+const FetchVendorPaymentAndPayoutCounts = async (req, res, next) => {
+  try {
+    const vendorId = req.user;
+
+    const [payoutStats, paymentStats] = await Promise.all([
+      payoutmodal.aggregate([
+        { $match: { vendorId } },
+        {
+          $group: {
+            _id: null,
+            count: { $sum: 1 },
+            totalAmount: { $sum: "$amount" },
+          },
+        },
+      ]),
+      paymentmodal.aggregate([
+        { $match: { vendorId } },
+        {
+          $group: {
+            _id: null,
+            count: { $sum: 1 },
+            totalAmount: { $sum: "$amount" },
+          },
+        },
+      ]),
+    ]);
+    const totalPayoutAmount = payoutStats[0]?.totalAmount || 0;
+    const totalPaymentAmount = paymentStats[0]?.totalAmount || 0;
+
+    return res.status(200).json({
+      status: true,
+      message: "Stats fetched successfully",
+      data: {
+        totalPayoutAmount,
+        totalPaymentAmount,
+      },
+    });
+  } catch (error) {
+    return next(new AppErr(error.message, 500));
+  }
+};
+
 module.exports = {
   FetchVendorPayouts,
   FetchVendorOrderPayments,
+  FetchVendorPaymentAndPayoutCounts,
 };

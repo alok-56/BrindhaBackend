@@ -12,6 +12,7 @@ const { IsVendor } = require("../Middleware/IsVendor");
 const {
   FetchVendorPayouts,
   FetchVendorOrderPayments,
+  FetchVendorPaymentAndPayoutCounts,
 } = require("../Controllers/Vendor/payout");
 
 const PayoutRouter = express.Router();
@@ -35,5 +36,8 @@ PayoutRouter.get(
   IsVendor,
   FetchVendorOrderPayments
 );
+
+PayoutRouter.get("/fetch/vendor/payout/count", IsVendor, FetchVendorPaymentAndPayoutCounts);
+
 
 module.exports = PayoutRouter;
