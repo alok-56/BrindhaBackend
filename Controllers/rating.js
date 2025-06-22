@@ -57,7 +57,6 @@ const FetchVendorRating = async (req, res, next) => {
       return next(new AppErr(err.errors[0].msg, 403));
     }
 
-
     let rate = await RatingModel.find({ VendorId: req.user })
       .populate("VendorId")
       .populate("UserId");

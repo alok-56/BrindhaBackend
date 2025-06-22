@@ -419,63 +419,85 @@ const VendorEarningsStatsApi = async (req, res, next) => {
       return next(new AppErr("Filter must be 'week' or 'month'", 400));
     }
 
-    const matchStage = {
-      vendorId,
-      paymentStatus: "Completed",
-    };
-
-    let groupStage, labelMap, formatLabel, resultKey;
+    let groupField, labelMap, resultKey, formatLabel;
 
     if (filter === "week") {
-      groupStage = { _id: { $dayOfWeek: "$createdAt" } };
+      groupField = "$dayOfWeek";
       labelMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       resultKey = "day";
-      formatLabel = (id) => labelMap[id - 1];
+      formatLabel = (id) => labelMap[id - 1]; // dayOfWeek: 1 (Sun) to 7 (Sat)
     } else {
-      groupStage = { _id: { $month: "$createdAt" } };
+      groupField = "$month";
       labelMap = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
       ];
       resultKey = "month";
-      formatLabel = (id) => labelMap[id - 1];
+      formatLabel = (id) => labelMap[id - 1]; // month: 1 (Jan) to 12 (Dec)
     }
 
-    const payments = await paymentmodal.aggregate([
-      { $match: matchStage },
-      { $group: { _id: groupStage._id, totalAmount: { $sum: "$amount" } } },
-      { $sort: { _id: 1 } },
+    const earningsAgg = await paymentmodal.aggregate([
+      {
+        $match: {
+          vendorId,
+          paymentStatus: "Completed",
+        },
+      },
+      {
+        $group: {
+          _id: { groupKey: { [groupField]: "$createdAt" } },
+          totalAmount: { $sum: "$amount" },
+        },
+      },
+      {
+        $sort: { "_id.groupKey": 1 },
+      },
     ]);
 
-    // Initialize all values with 0
-    const earningsMap = {};
+    const ordersAgg = await orderModal.aggregate([
+      { $unwind: "$subOrders" },
+      { $match: { "subOrders.vendorId": vendorId } },
+      {
+        $project: {
+          groupKey: { [groupField]: "$createdAt" },
+        },
+      },
+      {
+        $group: {
+          _id: "$groupKey",
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ]);
+
+    // Initialize full range with 0s
+    const combinedMap = {};
     labelMap.forEach((label) => {
-      earningsMap[label] = 0;
+      combinedMap[label] = { earning: 0, orders: 0 };
     });
 
-    payments.forEach((p) => {
-      const label = formatLabel(p._id);
-      earningsMap[label] = p.totalAmount;
+    earningsAgg.forEach((e) => {
+      const label = formatLabel(e._id.groupKey);
+      combinedMap[label].earning = e.totalAmount;
     });
 
-    const formatted = labelMap.map((label) => ({
+    ordersAgg.forEach((o) => {
+      const label = formatLabel(o._id);
+      combinedMap[label].orders = o.count;
+    });
+
+    const result = labelMap.map((label) => ({
       [resultKey]: label,
-      earning: earningsMap[label],
+      earning: combinedMap[label].earning,
+      orders: combinedMap[label].orders,
     }));
 
     return res.status(200).json({
       status: true,
-      data: formatted,
+      data: result,
       filter,
     });
   } catch (err) {
