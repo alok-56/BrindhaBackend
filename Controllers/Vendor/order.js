@@ -429,8 +429,18 @@ const VendorEarningsStatsApi = async (req, res, next) => {
     } else {
       groupField = "$month";
       labelMap = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
       ];
       resultKey = "month";
       formatLabel = (id) => labelMap[id - 1]; // month: 1 (Jan) to 12 (Dec)
