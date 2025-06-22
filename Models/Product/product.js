@@ -76,6 +76,7 @@ const ProductSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    colors: [],
   },
   {
     timestamps: true,

@@ -33,14 +33,6 @@ const OrderSchema = new mongoose.Schema(
         ],
         subtotal: { type: Number, required: true },
         deliveryCharge: { type: Number, required: true },
-        Returned: Boolean,
-        ReturnRequested: Boolean,
-        ReturnReason: String,
-        ReturnStatus: {
-          type: String,
-          enum: ["None", "Requested", "Approved", "Rejected", "Completed"],
-          default: "None",
-        },
         total: { type: Number, required: true },
         status: {
           type: String,

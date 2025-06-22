@@ -1,8 +1,16 @@
+const Razorpay = require("razorpay");
 const AppErr = require("../../Helper/appError");
 const orderModal = require("../../Models/Order/order");
 const paymentmodal = require("../../Models/Order/payment");
+const ReturnModal = require("../../Models/Order/return");
 const ProductModel = require("../../Models/Product/product");
 const moment = require("moment");
+require("dotenv").config();
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_SECRET,
+});
 
 // Get All Order of Vendor
 const GetAllorder = async (req, res, next) => {
@@ -322,8 +330,18 @@ const VendorEarningsStatsApi = async (req, res, next) => {
     } else if (filter === "month") {
       groupStage = { _id: { $month: "$createdAt" } };
       labelMap = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
       ];
       formatLabel = (id) => labelMap[id - 1];
     }
@@ -364,16 +382,32 @@ const VendorOrderStatsApi = async (req, res, next) => {
     let projectStage, groupStage, labelMap, formatLabel;
 
     if (filter === "week") {
-      projectStage = { day: { $dayOfWeek: "$createdAt" }, "subOrders.vendorId": 1 };
+      projectStage = {
+        day: { $dayOfWeek: "$createdAt" },
+        "subOrders.vendorId": 1,
+      };
       groupStage = { _id: "$day" };
       labelMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       formatLabel = (id) => labelMap[id - 1];
     } else if (filter === "month") {
-      projectStage = { month: { $month: "$createdAt" }, "subOrders.vendorId": 1 };
+      projectStage = {
+        month: { $month: "$createdAt" },
+        "subOrders.vendorId": 1,
+      };
       groupStage = { _id: "$month" };
       labelMap = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
       ];
       formatLabel = (id) => labelMap[id - 1];
     }
@@ -401,6 +435,49 @@ const VendorOrderStatsApi = async (req, res, next) => {
   }
 };
 
+// get all Canceled order
+const getCancelledOrdersofVendor = async (req, res, next) => {
+  try {
+    const vendorId = req.user;
+
+    const returns = await ReturnModal.find({ vendorId })
+      .populate("orderId", "grandTotal paymentMode")
+      .populate("userId", "name email")
+      .populate("products.productId", "name price")
+      .sort({ createdAt: -1 });
+
+    const enrichedReturns = await Promise.all(
+      returns.map(async (r) => {
+        let razorpayRefundStatus = null;
+
+        if (r.razorpayRefundId) {
+          try {
+            const refund = await razorpay.refunds.fetch(r.razorpayRefundId);
+            razorpayRefundStatus = refund.status;
+          } catch (err) {
+            console.warn("Error fetching Razorpay refund status:", err.message);
+            razorpayRefundStatus = "fetch_failed";
+          }
+        }
+
+        return {
+          ...r.toObject(),
+          razorpayRefundStatus,
+        };
+      })
+    );
+
+    return res.status(200).json({
+      status: true,
+      message: "Cancelled orders with refund status",
+      count: enrichedReturns.length,
+      data: enrichedReturns,
+    });
+  } catch (error) {
+    console.error("Get Cancelled Orders Error:", error);
+    return next(new AppErr(error.message, 500));
+  }
+};
 
 module.exports = {
   GetAllorder,
@@ -410,4 +487,5 @@ module.exports = {
   VendorsOrderCountApi,
   VendorEarningsStatsApi,
   VendorOrderStatsApi,
+  getCancelledOrdersofVendor
 };

@@ -5,6 +5,7 @@ const orderModal = require("../../Models/Order/order");
 const paymentmodal = require("../../Models/Order/payment");
 const crypto = require("crypto");
 const ProductModel = require("../../Models/Product/product");
+const ReturnModal = require("../../Models/Order/return");
 require("dotenv").config();
 
 const razorpay = new Razorpay({
@@ -215,7 +216,7 @@ const GetMyorder = async (req, res, next) => {
             price: product.price,
             quantity: product.quantity,
             commissionPercent: product.commissionPercent,
-            image: product.productId?.Images, // if exists
+            image: product.productId?.Images,
           };
         });
 
@@ -304,12 +305,145 @@ const UpdateLockStock = async (req, res, next) => {
 };
 
 // cancel order
+const CreateCancelorder = async (req, res, next) => {
+  try {
+    const { orderid, vendorid } = req.params;
 
+    const order = await orderModal.findById(orderid);
+    if (!order) return next(new AppErr("Order not found", 404));
 
+    const subOrderIndex = order.subOrders.findIndex(
+      (sub) => sub.vendorId.toString() === vendorid
+    );
+
+    if (subOrderIndex === -1) {
+      return next(new AppErr("Vendor not found in this order", 404));
+    }
+
+    const subOrder = order.subOrders[subOrderIndex];
+
+    if (subOrder.status !== "Pending") {
+      return next(new AppErr("Only pending orders can be cancelled", 400));
+    }
+
+    let refundData = null;
+
+    // 🔧 Manually define delivery charge (override subOrder.deliveryCharge)
+    const deliveryCharge = 100; // Or apply logic here
+
+    // Refund only product total (excluding delivery charge)
+    let refundAmount = subOrder.total - deliveryCharge;
+
+    if (refundAmount < 0) refundAmount = 0;
+
+    // Refund via Razorpay if ONLINE payment completed
+    if (order.paymentMode === "ONLINE" && order.paymentStatus === "Completed") {
+      try {
+        refundData = await razorpay.payments.refund(order.razorpayPaymentId, {
+          amount: Math.round(refundAmount * 100), // paise
+          notes: {
+            orderId: order._id.toString(),
+            vendorId: vendorid,
+          },
+        });
+      } catch (refundErr) {
+        return next(new AppErr("Refund failed: " + refundErr.message, 500));
+      }
+    }
+
+    // Update sub-order status
+    order.subOrders[subOrderIndex].status = "Cancelled";
+    await order.save();
+
+    // Save return record
+    const returnRecord = await ReturnModal.create({
+      orderId: order._id,
+      userId: order.userId,
+      vendorId: subOrder.vendorId,
+      subOrderIndex,
+      products: subOrder.products.map((p) => ({
+        productId: p.productId,
+        quantity: p.quantity,
+        refundedAmount: p.price * p.quantity,
+      })),
+      returnAmount: refundAmount,
+      razorpayRefundId: refundData?.id || null,
+      razorpayPaymentId: order.razorpayPaymentId,
+      status: "Approved",
+      reason: "User cancelled order",
+      notes: `Delivery charge of ₹${deliveryCharge} not refunded`,
+    });
+
+    return res.status(200).json({
+      status: true,
+      message: "Order cancelled and refund initiated",
+      data: refundData,
+      refundrecord: returnRecord,
+    });
+  } catch (error) {
+    console.error("Cancel Order Error:", error);
+    return next(new AppErr(error.message, 500));
+  }
+};
+
+// get My all Canceled order
+const getCancelledOrders = async (req, res, next) => {
+  try {
+    const userId = req.user;
+    const { _id } = req.query;
+
+    // Build query dynamically
+    const query = { userId };
+    if (_id) {
+      query._id = _id;
+    }
+
+    // Fetch Return records
+    const returns = await ReturnModal.find(query)
+      .populate("orderId", "grandTotal paymentMode")
+      .populate("vendorId", "name")
+      .populate("products.productId", "name price")
+      .sort({ createdAt: -1 });
+
+    // Fetch refund status for each return
+    const enrichedReturns = await Promise.all(
+      returns.map(async (r) => {
+        let razorpayRefundStatus = null;
+
+        if (r.razorpayRefundId) {
+          try {
+            const refund = await razorpay.refunds.fetch(r.razorpayRefundId);
+            razorpayRefundStatus = refund.status;
+          } catch (err) {
+            console.warn("Error fetching Razorpay refund status:", err.message);
+            razorpayRefundStatus = "fetch_failed";
+          }
+        }
+
+        return {
+          ...r.toObject(),
+          razorpayRefundStatus,
+        };
+      })
+    );
+
+    return res.status(200).json({
+      status: true,
+      message: "Cancelled orders with refund status",
+      count: enrichedReturns.length,
+      data: enrichedReturns,
+    });
+  } catch (error) {
+    console.error("Get Cancelled Orders Error:", error);
+    return next(new AppErr(error.message, 500));
+  }
+};
 
 module.exports = {
   CreateOrder,
   VerifyOrder,
   GetMyorder,
-  UpdateLockStock
+  UpdateLockStock,
+  CreateCancelorder,
+  getCancelledOrders,
 };

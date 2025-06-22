@@ -6,6 +6,8 @@ const {
   VerifyOrder,
   GetMyorder,
   UpdateLockStock,
+  CreateCancelorder,
+  getCancelledOrders,
 } = require("../Controllers/Users/order");
 const { IsVendor } = require("../Middleware/IsVendor");
 const {
@@ -16,6 +18,7 @@ const {
   VendorsOrderCountApi,
   VendorOrderStatsApi,
   VendorEarningsStatsApi,
+  getCancelledOrdersofVendor,
 } = require("../Controllers/Vendor/order");
 const {
   FetchAllorderbySuper,
@@ -48,6 +51,16 @@ OrderRouter.get("/my/order", IsUser, GetMyorder);
 // Update Lock
 OrderRouter.patch("/order/lock/update", IsUser, UpdateLockStock);
 
+// Create Cancel Order
+OrderRouter.post(
+  "/create/cancelorder/:orderid/:vendorid",
+  IsUser,
+  CreateCancelorder
+);
+
+// Get Cancel Order
+OrderRouter.get("/get/cancel/order", IsUser, getCancelledOrders);
+
 // <!--------------------------VENDOR----------------------------->
 
 // Get All Order Of Vendor
@@ -55,6 +68,9 @@ OrderRouter.get("/vendor/my/order", IsVendor, GetAllorder);
 
 // Get Order By OrderId
 OrderRouter.get("/vendor/order/:orderId", IsVendor, GetVendorOrderById);
+
+//Get Cancel order
+OrderRouter.get("/vendor/cancelorder", IsVendor, getCancelledOrdersofVendor);
 
 // Update Status
 OrderRouter.patch(
