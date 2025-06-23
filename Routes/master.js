@@ -77,6 +77,9 @@ MasteradminRouter.patch(
 // Get measurement
 MasteradminRouter.get("/get/measurement", IsSuperAdmin, GetAllmeasurement);
 
+// Get measurement for vendor
+MasteradminRouter.get("/get/measurement/vendor", IsVendor, GetAllmeasurement);
+
 // Get measurement by Id
 MasteradminRouter.get("/get/measurement/:id", IsSuperAdmin, GetmeasurementById);
 
