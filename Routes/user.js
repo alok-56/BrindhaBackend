@@ -25,6 +25,10 @@ const {
   FetchOrderbyUser,
 } = require("../Controllers/SuperAdmin/user");
 const { AddOrUpdateWishlist } = require("../Controllers/Users/wishlist");
+const {
+  GetUserNotification,
+  MarkNotificationAsRead,
+} = require("../Controllers/notification");
 const UserRouter = express.Router();
 
 // User create
@@ -106,7 +110,6 @@ UserRouter.post(
   VerifyOtp
 );
 
-
 // Update Password
 UserRouter.patch(
   "/Forgetpassword/user",
@@ -115,5 +118,10 @@ UserRouter.patch(
   ForgetPassword
 );
 
+// Get Notification
+UserRouter.get("/get/notification", IsUser, GetUserNotification);
+
+// Mark read Notification
+UserRouter.patch("/mark/read/notification/:id", IsUser, MarkNotificationAsRead);
 
 module.exports = UserRouter;

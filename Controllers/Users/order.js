@@ -10,6 +10,7 @@ const UserModel = require("../../Models/User/user");
 const SendEmail = require("../../Helper/Email/sendEmail");
 const VendorModel = require("../../Models/Vendor/vendor");
 const emailQueue = require("../../Helper/Email/emailjobs");
+const notificationModal = require("../../Models/notification");
 require("dotenv").config();
 
 const razorpay = new Razorpay({
@@ -183,6 +184,12 @@ const VerifyOrder = async (req, res, next) => {
         razorpayOrderId,
         razorpayPaymentId
       );
+
+      await notificationModal.create({
+        userId: orderData.userId,
+        title: "New Order Received",
+        message: `Order has been placed Successfully.`,
+      });
 
       let user = await UserModel.findById(orderData.userId).select("Email");
 
@@ -396,6 +403,12 @@ const CreateCancelorder = async (req, res, next) => {
       status: "Approved",
       reason: "User cancelled order",
       notes: `Delivery charge of ₹${deliveryCharge} not refunded`,
+    });
+
+    await notificationModal.create({
+      userId: order.userId,
+      title: "Order Cancelled",
+      message: `Your Order has been cancelled.`,
     });
 
     let user = await UserModel.findById(order.userId).select("Email");

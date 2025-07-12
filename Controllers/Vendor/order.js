@@ -7,6 +7,7 @@ const ProductModel = require("../../Models/Product/product");
 const moment = require("moment");
 const emailQueue = require("../../Helper/Email/emailjobs");
 const UserModel = require("../../Models/User/user");
+const notificationModal = require("../../Models/notification");
 require("dotenv").config();
 
 const razorpay = new Razorpay({
@@ -276,6 +277,12 @@ const UpdateOrderStatusByVendor = async (req, res, next) => {
     }
 
     await order.save();
+
+    await notificationModal.create({
+      userId: order.userId,
+      title: `Order ${newStatus}`,
+      message: `Your Order has been ${newStatus}.`,
+    });
 
     let user = await UserModel.findById(order.userId).select("Email");
 
