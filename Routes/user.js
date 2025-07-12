@@ -10,6 +10,7 @@ const {
   SendOtp,
   ForgetPassword,
   loginWithGoogle,
+  VerifyOtp,
 } = require("../Controllers/Users/auth");
 const {
   CreateShippingAddress,
@@ -23,6 +24,7 @@ const {
   FetchAllUserbySuper,
   FetchOrderbyUser,
 } = require("../Controllers/SuperAdmin/user");
+const { AddOrUpdateWishlist } = require("../Controllers/Users/wishlist");
 const UserRouter = express.Router();
 
 // User create
@@ -98,6 +100,13 @@ UserRouter.post(
   SendOtp
 );
 
+UserRouter.post(
+  "/verify/otp/user",
+  body("otp").notEmpty().withMessage("Otp is required"),
+  VerifyOtp
+);
+
+
 // Update Password
 UserRouter.patch(
   "/Forgetpassword/user",
@@ -105,5 +114,6 @@ UserRouter.patch(
   body("Password").notEmpty().withMessage("Password is required"),
   ForgetPassword
 );
+
 
 module.exports = UserRouter;

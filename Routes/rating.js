@@ -19,8 +19,7 @@ RatingRouter.post(
 
 // fetch Product Rating
 RatingRouter.get(
-  "/fetch/product/Rating",
-  body("ProductId").notEmpty().withMessage("ProductId is required"),
+  "/fetch/product/Rating/:ProductId",
   FetchProductRating
 );
 

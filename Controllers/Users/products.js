@@ -15,7 +15,10 @@ const FetchAllUserProduct = async (req, res, next) => {
       search,
       tag,
       Ecofriendly,
+      color,
     } = req.query;
+
+    console.log(color)
 
     page = parseInt(page);
     limit = parseInt(limit);
@@ -50,6 +53,10 @@ const FetchAllUserProduct = async (req, res, next) => {
     // Tag filtering (e.g., 'trending', 'bestseller')
     if (tag) {
       query.Tags = tag;
+    }
+
+    if (color) {
+      query.color = color;
     }
 
     const products = await ProductModel.find(query)

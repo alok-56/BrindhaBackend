@@ -16,12 +16,14 @@ const {
   FetchAllProduct,
   ApproveRejectProducts,
   GetProductByIdSuper,
+  UpdateTagOfProduct,
 } = require("../Controllers/SuperAdmin/product");
 const { IsUser } = require("../Middleware/IsUser");
 const {
   FetchAllUserProduct,
   FetchUserProductById,
 } = require("../Controllers/Users/products");
+const { AddOrUpdateWishlist, GetWishlistByUserId } = require("../Controllers/Users/wishlist");
 const ProductRouter = express.Router();
 
 //Product add
@@ -109,5 +111,15 @@ ProductRouter.get("/users/get/products", IsUser, FetchAllUserProduct);
 
 // Fetch Product by Id
 ProductRouter.get("/users/get/product/:id", IsUser, FetchUserProductById);
+
+
+// Update tags by superadmin
+ProductRouter.patch("/update/product/tags", IsSuperAdmin, UpdateTagOfProduct);
+
+// Create Wishlst
+ProductRouter.patch("/wishlist/add", IsUser, AddOrUpdateWishlist);
+
+// Get Wishlst
+ProductRouter.get("/wishlist/get", IsUser, GetWishlistByUserId);
 
 module.exports = ProductRouter;

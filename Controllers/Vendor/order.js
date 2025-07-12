@@ -5,6 +5,8 @@ const paymentmodal = require("../../Models/Order/payment");
 const ReturnModal = require("../../Models/Order/return");
 const ProductModel = require("../../Models/Product/product");
 const moment = require("moment");
+const emailQueue = require("../../Helper/Email/emailjobs");
+const UserModel = require("../../Models/User/user");
 require("dotenv").config();
 
 const razorpay = new Razorpay({
@@ -274,6 +276,18 @@ const UpdateOrderStatusByVendor = async (req, res, next) => {
     }
 
     await order.save();
+
+    let user = await UserModel.findById(order.userId).select("Email");
+
+    emailQueue.add({
+      email: user.Email,
+      subject: "OrderStatusUpdated",
+      name: "",
+      extraData: {
+        orderId: orderId.slice(0, 8),
+        status: newStatus,
+      },
+    });
 
     res.status(200).json({
       status: 200,

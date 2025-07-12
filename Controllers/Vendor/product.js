@@ -4,6 +4,7 @@ const CategoryModel = require("../../Models/Master/category");
 const MeasurementModel = require("../../Models/Master/measurement");
 const ProductModel = require("../../Models/Product/product");
 const SubcategoryModel = require("../../Models/Master/subcategory");
+const emailQueue = require("../../Helper/Email/emailjobs");
 
 // Add Product
 const CreateProduct = async (req, res, next) => {
@@ -79,6 +80,13 @@ const SendProductForVerification = async (req, res, next) => {
         return product.save();
       })
     );
+
+    emailQueue.add({
+      email: vendor.Email,
+      subject: "ProductAdded",
+      name: "",
+      extraData: {},
+    });
 
     return res.status(200).json({
       status: true,
@@ -315,5 +323,5 @@ module.exports = {
   AllProductbyVendor,
   GetProductById,
   UpdateProduct,
-  getVendorProductStatsApi
+  getVendorProductStatsApi,
 };

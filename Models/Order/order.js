@@ -29,6 +29,8 @@ const OrderSchema = new mongoose.Schema(
             quantity: { type: Number, required: true },
             price: { type: Number, required: true },
             commissionPercent: { type: Number, required: true },
+            size: { type: Number, required: true },
+            color: { type: String },
           },
         ],
         subtotal: { type: Number, required: true },

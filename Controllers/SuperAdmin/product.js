@@ -1,4 +1,5 @@
 const AppErr = require("../../Helper/appError");
+const emailQueue = require("../../Helper/Email/emailjobs");
 const ProductModel = require("../../Models/Product/product");
 
 // Get All Product Based on Vendor
@@ -91,6 +92,16 @@ const ApproveRejectProducts = async (req, res, next) => {
       })
     );
 
+    emailQueue.add({
+      email: vendor.Email,
+      subject: "ProductStatusUpdated",
+      name: "",
+      extraData: {
+        productLink: "",
+        status: "",
+      },
+    });
+
     return res.status(200).json({
       status: true,
       code: 200,
@@ -102,8 +113,7 @@ const ApproveRejectProducts = async (req, res, next) => {
 };
 
 // get Product By Id
-
- const GetProductByIdSuper = async (req, res, next) => {
+const GetProductByIdSuper = async (req, res, next) => {
   try {
     let { id } = req.params;
 
@@ -120,8 +130,40 @@ const ApproveRejectProducts = async (req, res, next) => {
   }
 };
 
+// Update Product Tag
+
+const UpdateTagOfProduct = async (req, res, next) => {
+  try {
+    let { ProductId, tag, empty } = req.query;
+
+    let product = await ProductModel.findById(ProductId);
+
+    
+    if (empty) {
+      product.Tags = [];
+    } else {
+      if (product.Tags.includes(tag)) {
+      return next(new AppErr(`${tag} already present for this product`));
+    }
+
+      product.Tags.push(tag);
+    }
+
+    product.save();
+
+    return res.status(200).json({
+      status: true,
+      message: "Product Tags Updated successfully",
+      code: 200,
+    });
+  } catch (error) {
+    return next(new AppErr(error.message, 500));
+  }
+};
+
 module.exports = {
   FetchAllProduct,
   ApproveRejectProducts,
-  GetProductByIdSuper
+  GetProductByIdSuper,
+  UpdateTagOfProduct,
 };

@@ -3,6 +3,7 @@ const AppErr = require("../../Helper/appError");
 const CompanyModel = require("../../Models/Vendor/companydetails");
 const VendorModel = require("../../Models/Vendor/vendor");
 const { generateToken } = require("../../Helper/generateToken");
+const emailQueue = require("../../Helper/Email/emailjobs");
 
 // Create Vendor
 const CreateVendor = async (req, res, next) => {
@@ -28,6 +29,13 @@ const CreateVendor = async (req, res, next) => {
 
     // Create vendor
     let vendor = await VendorModel.create(req.body);
+
+    emailQueue.add({
+      email: Email,
+      subject: "Welcomevendor",
+      name: Vendorname,
+      extraData: {},
+    });
 
     return res.status(200).json({
       status: true,
@@ -165,6 +173,20 @@ const SendForverification = async (req, res, next) => {
       vendor.isCompanyVerified = "Requestsend";
       vendor.CompanyId = company._id;
       await vendor.save();
+
+      emailQueue.add({
+        email: process.env.Email,
+        subject: "VendorRegisterednew",
+        name: BussinessName,
+        extraData: {},
+      });
+
+      emailQueue.add({
+        email: vendor.Email,
+        subject: "VendorRegistered",
+        name: BussinessName,
+        extraData: {},
+      });
 
       return res.status(200).json({
         status: false,

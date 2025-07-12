@@ -6,6 +6,10 @@ const paymentmodal = require("../../Models/Order/payment");
 const crypto = require("crypto");
 const ProductModel = require("../../Models/Product/product");
 const ReturnModal = require("../../Models/Order/return");
+const UserModel = require("../../Models/User/user");
+const SendEmail = require("../../Helper/Email/sendEmail");
+const VendorModel = require("../../Models/Vendor/vendor");
+const emailQueue = require("../../Helper/Email/emailjobs");
 require("dotenv").config();
 
 const razorpay = new Razorpay({
@@ -47,11 +51,11 @@ const saveMultiVendorOrder = async (
 
   for (const sub of subOrders) {
     const totalProductPrice = sub.products.reduce(
-      (acc, item) => acc + item.price * item.quantity,
+      (acc, item) => acc + item.price * item.quantity * item.size,
       0
     );
     const totalCommission = sub.products.reduce((acc, item) => {
-      const itemTotal = item.price * item.quantity;
+      const itemTotal = item.price * item.quantity * item.size;
       return acc + (itemTotal * item.commissionPercent) / 100;
     }, 0);
     const vendorAmount =
@@ -66,6 +70,15 @@ const saveMultiVendorOrder = async (
       transactionId: razorpayPaymentId,
       paymentMode,
       paymentStatus: "Completed",
+    });
+
+    let vendor = await VendorModel.findById(sub.vendorId);
+
+    emailQueue.add({
+      email: vendor.Email,
+      subject: "OrderCreatedVendor",
+      name: "",
+      orderData,
     });
 
     // Prepare bulk operations for product stock updates
@@ -171,6 +184,15 @@ const VerifyOrder = async (req, res, next) => {
         razorpayPaymentId
       );
 
+      let user = await UserModel.findById(orderData.userId).select("Email");
+
+      emailQueue.add({
+        email: user.Email,
+        subject: "OrderCreatedUser",
+        name: "",
+        extraData: orderData,
+      });
+
       return res.status(200).json({
         status: true,
         message: "order verified successfully",
@@ -217,6 +239,8 @@ const GetMyorder = async (req, res, next) => {
             quantity: product.quantity,
             commissionPercent: product.commissionPercent,
             image: product.productId?.Images,
+            size: product?.size ? product?.size : "NA",
+            color: product?.color ? product?.color : "NA",
           };
         });
 
@@ -372,6 +396,19 @@ const CreateCancelorder = async (req, res, next) => {
       status: "Approved",
       reason: "User cancelled order",
       notes: `Delivery charge of ₹${deliveryCharge} not refunded`,
+    });
+
+    let user = await UserModel.findById(order.userId).select("Email");
+
+    emailQueue.add({
+      email: user.Email,
+      subject: "OrderCancelled",
+      name: "",
+      extraData: {
+        orderId: orderid.slice(0, 8),
+        RefundAmount: refundAmount,
+        refundid: refundData?.id,
+      },
     });
 
     return res.status(200).json({

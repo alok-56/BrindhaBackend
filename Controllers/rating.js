@@ -34,7 +34,7 @@ const FetchProductRating = async (req, res, next) => {
       return next(new AppErr(err.errors[0].msg, 403));
     }
 
-    let { ProductId } = req.body;
+    let { ProductId } = req.params;
 
     let rate = await RatingModel.find({ ProductId: ProductId });
 

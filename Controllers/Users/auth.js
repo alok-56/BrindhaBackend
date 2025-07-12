@@ -3,6 +3,7 @@ const AppErr = require("../../Helper/appError");
 const { generateToken } = require("../../Helper/generateToken");
 const UserModel = require("../../Models/User/user");
 const SendEmail = require("../../Helper/Email/sendEmail");
+const OtpModal = require("../../Models/User/otp");
 
 // Create Super Admin
 const CreateUser = async (req, res, next) => {
@@ -197,7 +198,6 @@ const loginWithGoogle = async (req, res, next) => {
         token: token,
       });
     }
-
   } catch (error) {
     return next(new AppErr(error.message, 500));
   }
@@ -206,6 +206,11 @@ const loginWithGoogle = async (req, res, next) => {
 // Send Otp
 const SendOtp = async (req, res, next) => {
   try {
+    let err = validationResult(req);
+    if (err.errors.length > 0) {
+      return next(new AppErr(err.errors[0].msg, 403));
+    }
+
     let { Email } = req.body;
 
     // Check if user exists
@@ -216,11 +221,42 @@ const SendOtp = async (req, res, next) => {
 
     // Generate a random 5-digit OTP
     const otp = Math.floor(10000 + Math.random() * 90000).toString();
+    await OtpModal.create({ otp: otp });
     await SendEmail(Email, "OTP", email.Username, { otp: otp });
 
     res
       .status(200)
-      .json({ status: true, code: 200, message: "OTP sent successfully", otp });
+      .json({ status: true, code: 200, message: "OTP sent successfully" });
+  } catch (error) {
+    return next(new AppErr(error.message, 500));
+  }
+};
+
+// VeriFy Otp
+const VerifyOtp = async (req, res, next) => {
+  try {
+    let err = validationResult(req);
+    if (err.errors.length > 0) {
+      return next(new AppErr(err.errors[0].msg, 403));
+    }
+
+    let { otp } = req.body;
+
+    // Check if user exists
+    let otpexists = await OtpModal.findOne({ otp: otp });
+    if (!otpexists) {
+      return next(new AppErr("Otp Expired", 400));
+    }
+
+    if (otpexists.otp !== Number(otp)) {
+      return next(new AppErr("Invailed Otp", 400));
+    }
+
+    await OtpModal.findByIdAndDelete(otpexists._id);
+
+    res
+      .status(200)
+      .json({ status: true, code: 200, message: "OTP Verified successfully" });
   } catch (error) {
     return next(new AppErr(error.message, 500));
   }
@@ -229,6 +265,11 @@ const SendOtp = async (req, res, next) => {
 // Forget Password
 const ForgetPassword = async (req, res, next) => {
   try {
+    let err = validationResult(req);
+    if (err.errors.length > 0) {
+      return next(new AppErr(err.errors[0].msg, 403));
+    }
+
     let { Email, Password } = req.body;
 
     let email = await UserModel.findOne({
@@ -264,5 +305,6 @@ module.exports = {
   LoginUser,
   SendOtp,
   ForgetPassword,
-  loginWithGoogle
+  loginWithGoogle,
+  VerifyOtp,
 };

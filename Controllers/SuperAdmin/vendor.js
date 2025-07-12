@@ -5,6 +5,7 @@ const VendorModel = require("../../Models/Vendor/vendor");
 const paymentmodal = require("../../Models/Order/payment");
 const ProductModel = require("../../Models/Product/product");
 const orderModal = require("../../Models/Order/order");
+const emailQueue = require("../../Helper/Email/emailjobs");
 
 // Get Vendor List with filter
 const GetVendorList = async (req, res, next) => {
@@ -119,6 +120,22 @@ const ApproveRejectvendor = async (req, res, next) => {
         isVerfied: false,
         isrejected: true,
         $push: { rejectremark: remarks },
+      });
+    }
+
+    if (status === "Approved") {
+      emailQueue.add({
+        email: vendor.Email,
+        subject: "VendorApproved",
+        name: vendor.BussinessName,
+        extraData: {},
+      });
+    } else {
+      emailQueue.add({
+        email: vendor.Email,
+        subject: "VendorRejected",
+        name: vendor.BussinessName,
+        extraData: {},
       });
     }
 

@@ -5,16 +5,15 @@ const SendEmail = require("./sendEmail");
 
 const emailQueue = new Bull("emailQueue", {
   redis: {
-    host: "redis-11138.c241.us-east-1-4.ec2.redns.redis-cloud.com",
-    port: 11138,
-    password: "Jbrm2gGFYcUlQJT7btYvLkmFwZwtBLME",
+    host: "redis-10293.c9.us-east-1-2.ec2.redns.redis-cloud.com",
+    port: 10293,
+    password: "WpWBjmxvUPuKbI34tiqT5hNUzik1tfpL",
   },
 });
 
 const ProcessEmailJob = async (job) => {
   try {
     const { email, subject, name, extraData } = job.data;
-
     await SendEmail(email, subject, name, extraData);
   } catch (error) {
     throw new AppErr(error.message, 500);
