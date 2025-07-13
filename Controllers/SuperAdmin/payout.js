@@ -48,7 +48,7 @@ const FetchAllpaymentsforpayout = async (req, res, next) => {
               cond: {
                 $and: [
                   { $eq: ["$$subOrder.vendorId", "$vendorId"] },
-                  { $eq: ["$$subOrder.status", "Pending"] },
+                  { $eq: ["$$subOrder.status", "Delivered"] },
                 ],
               },
             },
