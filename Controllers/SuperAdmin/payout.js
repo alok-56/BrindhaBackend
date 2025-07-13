@@ -128,6 +128,8 @@ const CreatePayout = async (req, res, next) => {
         },
       },
       { $unwind: "$order" },
+
+      // Add vendorId into root for direct comparison inside $filter
       {
         $addFields: {
           matchedSubOrder: {
@@ -136,15 +138,26 @@ const CreatePayout = async (req, res, next) => {
               as: "subOrder",
               cond: {
                 $and: [
-                  { $eq: ["$$subOrder.vendorId", "$vendorId"] },
-                  { $eq: ["$$subOrder.status", "Delivered"] },
+                  {
+                    $eq: [
+                      "$$subOrder.vendorId",
+                      new mongoose.Types.ObjectId(vendorId),
+                    ],
+                  },
+                  {
+                    $eq: ["$$subOrder.status", "Delivered"],
+                  },
                 ],
               },
             },
           },
         },
       },
-      { $match: { matchedSubOrder: { $ne: [] } } },
+      {
+        $match: {
+          matchedSubOrder: { $ne: [] },
+        },
+      },
     ]);
 
     if (payments.length === 0) {
@@ -154,7 +167,7 @@ const CreatePayout = async (req, res, next) => {
       });
     }
 
-    const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0); // rupees
+    const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
     const amountInPaise = totalAmount * 100;
     const paymentIds = payments.map((p) => p._id);
 
@@ -209,6 +222,7 @@ const CreatePayout = async (req, res, next) => {
     // );
 
     // 3. Create payout record in DB (store amount in rupees)
+
     const payoutRecord = await payoutmodal.create({
       vendorId,
       razorpayPayoutId: "testid1234",
