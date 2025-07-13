@@ -155,7 +155,7 @@ const CountVendorsSummary = async (req, res, next) => {
     const [total, approved, pending, rejected] = await Promise.all([
       VendorModel.countDocuments(),
       VendorModel.countDocuments({ isCompanyVerified: "Approved" }),
-      VendorModel.countDocuments({ isCompanyVerified: "Pending" }),
+      VendorModel.countDocuments({ isCompanyVerified: "Requestsend" || "Pending" }),
       VendorModel.countDocuments({ isCompanyVerified: "rejected" }),
     ]);
 

@@ -189,7 +189,7 @@ const SendForverification = async (req, res, next) => {
       });
 
       return res.status(200).json({
-        status: false,
+        status: true,
         code: 200,
         message: "Successfully send for verification",
       });
@@ -248,7 +248,7 @@ const SendForverification = async (req, res, next) => {
       await vendor.save();
 
       return res.status(200).json({
-        status: false,
+        status: true,
         code: 200,
         message: "Successfully send for verification",
       });
