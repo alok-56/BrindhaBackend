@@ -93,7 +93,7 @@ const ApproveRejectProducts = async (req, res, next) => {
     );
 
     emailQueue.add({
-      email: vendor.Email,
+      email: process.env.Email,
       subject: "ProductStatusUpdated",
       name: "",
       extraData: {
