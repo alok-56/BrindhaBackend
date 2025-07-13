@@ -4,11 +4,11 @@ const AppErr = require("../appError");
 const SendEmail = require("./sendEmail");
 
 const emailQueue = new Bull("emailQueue", {
-  redis: {
-    host: "redis-10293.c9.us-east-1-2.ec2.redns.redis-cloud.com",
-    port: 10293,
-    password: "WpWBjmxvUPuKbI34tiqT5hNUzik1tfpL",
-  },
+  // redis: {
+  //   host: "redis-10293.c9.us-east-1-2.ec2.redns.redis-cloud.com",
+  //   port: 10293,
+  //   password: "WpWBjmxvUPuKbI34tiqT5hNUzik1tfpL",
+  // },
 });
 
 const ProcessEmailJob = async (job) => {
@@ -20,14 +20,14 @@ const ProcessEmailJob = async (job) => {
   }
 };
 
-emailQueue.process(ProcessEmailJob);
+// emailQueue.process(ProcessEmailJob);
 
-emailQueue.on("error", (err) => {
-  console.error("Redis connection error:", err);
-});
+// emailQueue.on("error", (err) => {
+//   console.error("Redis connection error:", err);
+// });
 
-emailQueue.on("ready", () => {
-  console.log("Connected to Redis successfully");
-});
+// emailQueue.on("ready", () => {
+//   console.log("Connected to Redis successfully");
+// });
 
 module.exports = emailQueue;
