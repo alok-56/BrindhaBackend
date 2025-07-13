@@ -9,12 +9,12 @@ const RatingSchema = new mongoose.Schema(
     },
     VendorId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Vendor",
+      ref: "vendor",
       required: true,
     },
     UserId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "user",
       required: true,
     },
     rating: {
