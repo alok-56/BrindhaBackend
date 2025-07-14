@@ -222,7 +222,6 @@ const CreatePayout = async (req, res, next) => {
     // );
 
     // 3. Create payout record in DB (store amount in rupees)
-
     const payoutRecord = await payoutmodal.create({
       vendorId,
       razorpayPayoutId: "testid1234",

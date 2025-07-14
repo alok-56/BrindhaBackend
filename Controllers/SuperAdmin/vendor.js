@@ -98,7 +98,7 @@ const GetVendorById = async (req, res, next) => {
 const ApproveRejectvendor = async (req, res, next) => {
   try {
     let { id, status } = req.params;
-    let { remarks } = req.query;
+    let { remarks } = req.body;
     let vendor = await VendorModel.findById(id);
 
     if (!vendor) {
