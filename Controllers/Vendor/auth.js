@@ -100,7 +100,6 @@ const SendForverification = async (req, res, next) => {
   try {
     // take loged user id
     let id = req.user;
-    console.log(id);
     let vendor = await VendorModel.findById(id);
     if (!vendor) {
       return next("Vendor not found", 404);
@@ -202,33 +201,38 @@ const SendForverification = async (req, res, next) => {
         Bussinesstype,
         GstNumber,
         PanNumber,
-        Bankdetails: { AccountholderName, BankName, Accountnumber, Ifsc },
-        Address: { State, City, Country, Place, Pincode },
-        Documents: { AddressProof, AadharCard, Pincard, BankPassbook },
+        Bankdetails,
+        Address,
+        Documents,
       } = req.body;
 
-      // check company email
+      // Check if email exists in another company
       if (BussinessEmail) {
-        let email = await CompanyModel.findOne({
-          BussinessEmail: BussinessEmail,
+        const emailExists = await CompanyModel.findOne({
+          BussinessEmail,
+          _id: { $ne: vendor.CompanyId },
         });
-        if (email) {
+
+        if (emailExists) {
           return next(new AppErr("Email already exists", 400));
         }
       }
 
-      // check company number
+      // Check if number exists in another company
       if (BussinessNumber) {
-        let number = await CompanyModel.findOne({
-          BussinessNumber: BussinessNumber,
+        const numberExists = await CompanyModel.findOne({
+          BussinessNumber,
+          _id: { $ne: vendor.CompanyId },
         });
-        if (number) {
-          return next(new AppErr("Email already exists", 400));
+
+        if (numberExists) {
+          return next(new AppErr("Number already exists", 400));
         }
       }
 
       const updatedFields = {};
 
+      // Only assign fields if they're provided
       if (BussinessName) updatedFields.BussinessName = BussinessName;
       if (BussinessEmail) updatedFields.BussinessEmail = BussinessEmail;
       if (BussinessNumber) updatedFields.BussinessNumber = BussinessNumber;
@@ -236,21 +240,56 @@ const SendForverification = async (req, res, next) => {
       if (Bussinesstype) updatedFields.Bussinesstype = Bussinesstype;
       if (GstNumber) updatedFields.GstNumber = GstNumber;
       if (PanNumber) updatedFields.PanNumber = PanNumber;
-      if (Bankdetails) updatedFields.Bankdetails = Bankdetails;
-      if (Address) updatedFields.Address = Address;
-      if (Documents) updatedFields.Documents = Documents;
 
+      if (Bankdetails) {
+        updatedFields.Bankdetails = {
+          ...(Bankdetails.AccountholderName && {
+            AccountholderName: Bankdetails.AccountholderName,
+          }),
+          ...(Bankdetails.BankName && { BankName: Bankdetails.BankName }),
+          ...(Bankdetails.Accountnumber && {
+            Accountnumber: Bankdetails.Accountnumber,
+          }),
+          ...(Bankdetails.Ifsc && { Ifsc: Bankdetails.Ifsc }),
+        };
+      }
+
+      if (Address) {
+        updatedFields.Address = {
+          ...(Address.State && { State: Address.State }),
+          ...(Address.City && { City: Address.City }),
+          ...(Address.Country && { Country: Address.Country }),
+          ...(Address.Place && { Place: Address.Place }),
+          ...(Address.Pincode && { Pincode: Address.Pincode }),
+        };
+      }
+
+      if (Documents) {
+        updatedFields.Documents = {
+          ...(Documents.AddressProof && {
+            AddressProof: Documents.AddressProof,
+          }),
+          ...(Documents.AadharCard && { AadharCard: Documents.AadharCard }),
+          ...(Documents.Pincard && { Pincard: Documents.Pincard }),
+          ...(Documents.BankPassbook && {
+            BankPassbook: Documents.BankPassbook,
+          }),
+        };
+      }
+
+      // Update the company
       await CompanyModel.findByIdAndUpdate(vendor.CompanyId, updatedFields, {
         new: true,
       });
 
+      // Update vendor verification status
       vendor.isCompanyVerified = "Resend";
       await vendor.save();
 
       return res.status(200).json({
         status: true,
         code: 200,
-        message: "Successfully send for verification",
+        message: "Successfully sent for verification",
       });
     }
   } catch (error) {

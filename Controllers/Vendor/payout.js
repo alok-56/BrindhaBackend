@@ -1,3 +1,4 @@
+const { default: mongoose } = require("mongoose");
 const AppErr = require("../../Helper/appError");
 const paymentmodal = require("../../Models/Order/payment");
 const payoutmodal = require("../../Models/Order/payout");
@@ -15,7 +16,8 @@ const FetchVendorPayouts = async (req, res, next) => {
         .find({ vendorId: req.user })
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(limit),
+        .limit(limit)
+        .populate("payments"),
     ]);
 
     return res.status(200).json({
@@ -42,13 +44,72 @@ const FetchVendorOrderPayments = async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
+    const vendorObjectId = new mongoose.Types.ObjectId(req.user);
+
     const [total, data] = await Promise.all([
       paymentmodal.countDocuments({ vendorId: req.user }),
-      paymentmodal
-        .find({ vendorId: req.user })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
+
+      paymentmodal.aggregate([
+        { $match: { vendorId: vendorObjectId } },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+
+        // Lookup order to get subOrders
+        {
+          $lookup: {
+            from: "orders",
+            localField: "orderId",
+            foreignField: "_id",
+            as: "order",
+          },
+        },
+        { $unwind: "$order" },
+
+        // Extract only the vendor's subOrder
+        {
+          $addFields: {
+            matchedSubOrder: {
+              $first: {
+                $filter: {
+                  input: "$order.subOrders",
+                  as: "subOrder",
+                  cond: {
+                    $eq: ["$$subOrder.vendorId", vendorObjectId],
+                  },
+                },
+              },
+            },
+          },
+        },
+
+        // Remove entire order object
+        {
+          $unset: "order",
+        },
+
+        // Populate vendor
+        {
+          $lookup: {
+            from: "vendors",
+            localField: "vendorId",
+            foreignField: "_id",
+            as: "vendor",
+          },
+        },
+        { $unwind: "$vendor" },
+
+        // Populate user
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "user",
+          },
+        },
+        { $unwind: "$user" },
+      ]),
     ]);
 
     return res.status(200).json({
