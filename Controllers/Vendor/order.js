@@ -84,15 +84,121 @@ const razorpay = new Razorpay({
 //   }
 // };
 
+// const GetAllorder = async (req, res, next) => {
+//   try {
+//     const vendorId = req.user;
+//     const filter = req.query.filter;
+
+//     const dateFilter = {};
+//     const now = moment();
+
+//     // Set date filter range if provided
+//     if (filter === "today") {
+//       dateFilter.createdAt = {
+//         $gte: now.clone().startOf("day").toDate(),
+//         $lt: now.clone().endOf("day").toDate(),
+//       };
+//     } else if (filter === "week") {
+//       dateFilter.createdAt = {
+//         $gte: now.clone().startOf("week").toDate(),
+//         $lt: now.clone().endOf("week").toDate(),
+//       };
+//     } else if (filter === "month") {
+//       dateFilter.createdAt = {
+//         $gte: now.clone().startOf("month").toDate(),
+//         $lt: now.clone().endOf("month").toDate(),
+//       };
+//     } else if (filter === "year") {
+//       dateFilter.createdAt = {
+//         $gte: now.clone().startOf("year").toDate(),
+//         $lt: now.clone().endOf("year").toDate(),
+//       };
+//     } else if (filter && !["today", "week", "month", "year"].includes(filter)) {
+//       return next(
+//         new AppErr(
+//           "Invalid filter. Use 'today', 'week', 'month', or 'year'.",
+//           400
+//         )
+//       );
+//     }
+
+//     // Fetch orders with vendor's subOrders and optional date filter
+//     const orders = await orderModal.find({
+//       "subOrders.vendorId": vendorId,
+//       ...dateFilter,
+//     });
+
+//     // Collect productIds from matching subOrders
+//     const allProductIds = [];
+//     orders.forEach((order) => {
+//       order.subOrders.forEach((subOrder) => {
+//         if (subOrder.vendorId.toString() === vendorId.toString()) {
+//           subOrder.products.forEach((product) => {
+//             allProductIds.push(product.productId.toString());
+//           });
+//         }
+//       });
+//     });
+
+//     // Fetch product details
+//     const productDetails = await ProductModel.find({
+//       _id: { $in: allProductIds },
+//     }).lean();
+
+//     const productMap = {};
+//     productDetails.forEach((product) => {
+//       productMap[product._id.toString()] = product;
+//     });
+
+//     // Build response
+//     const vendorOrders = orders.map((order) => {
+//       const matchingSubOrders = order.subOrders
+//         .filter(
+//           (subOrder) => subOrder.vendorId.toString() === vendorId.toString()
+//         )
+//         .map((subOrder) => {
+//           const enrichedProducts = subOrder.products.map((product) => ({
+//             ...product.toObject(),
+//             productDetails: productMap[product.productId.toString()] || null,
+//           }));
+
+//           return {
+//             ...subOrder.toObject(),
+//             products: enrichedProducts,
+//           };
+//         });
+
+//       return {
+//         orderId: order._id,
+//         userId: order.userId,
+//         paymentMode: order.paymentMode,
+//         paymentStatus: order.paymentStatus,
+//         createdAt: order.createdAt,
+//         vendorSubOrders: matchingSubOrders,
+//       };
+//     });
+
+//     res.status(200).json({
+//       status: 200,
+//       message: "Orders fetched successfully",
+//       data: vendorOrders,
+//     });
+//   } catch (error) {
+//     return next(new AppErr(error.message, 500));
+//   }
+// };
+
 const GetAllorder = async (req, res, next) => {
   try {
     const vendorId = req.user;
-    const filter = req.query.filter; // 'today', 'week', 'month', 'year'
+    const filter = req.query.filter;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
     const dateFilter = {};
     const now = moment();
 
-    // Set date filter range if provided
     if (filter === "today") {
       dateFilter.createdAt = {
         $gte: now.clone().startOf("day").toDate(),
@@ -115,22 +221,22 @@ const GetAllorder = async (req, res, next) => {
       };
     } else if (filter && !["today", "week", "month", "year"].includes(filter)) {
       return next(
-        new AppErr(
-          "Invalid filter. Use 'today', 'week', 'month', or 'year'.",
-          400
-        )
+        new AppErr("Invalid filter. Use 'today', 'week', 'month', or 'year'.", 400)
       );
     }
 
-    // Fetch orders with vendor's subOrders and optional date filter
-    const orders = await orderModal.find({
+    // Find all matching orders
+    const allMatchingOrders = await orderModal.find({
       "subOrders.vendorId": vendorId,
       ...dateFilter,
     });
 
+    const total = allMatchingOrders.length;
+    const paginatedOrders = allMatchingOrders.slice(skip, skip + limit);
+
     // Collect productIds from matching subOrders
     const allProductIds = [];
-    orders.forEach((order) => {
+    paginatedOrders.forEach((order) => {
       order.subOrders.forEach((subOrder) => {
         if (subOrder.vendorId.toString() === vendorId.toString()) {
           subOrder.products.forEach((product) => {
@@ -151,7 +257,7 @@ const GetAllorder = async (req, res, next) => {
     });
 
     // Build response
-    const vendorOrders = orders.map((order) => {
+    const vendorOrders = paginatedOrders.map((order) => {
       const matchingSubOrders = order.subOrders
         .filter(
           (subOrder) => subOrder.vendorId.toString() === vendorId.toString()
@@ -181,12 +287,16 @@ const GetAllorder = async (req, res, next) => {
     res.status(200).json({
       status: 200,
       message: "Orders fetched successfully",
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalOrders: total,
       data: vendorOrders,
     });
   } catch (error) {
     return next(new AppErr(error.message, 500));
   }
 };
+
 
 // Get Vendor Order Id
 const GetVendorOrderById = async (req, res, next) => {

@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 const VendorModel = require("../../Models/Vendor/vendor");
 const payoutmodal = require("../../Models/Order/payout");
 const paymentmodal = require("../../Models/Order/payment");
+const moment = require("moment");
 require("dotenv").config();
 
 // Initialize Razorpay instance
@@ -16,7 +17,7 @@ const razorpay = new Razorpay({
 
 const FetchAllpaymentsforpayout = async (req, res, next) => {
   try {
-    const { vendorId } = req.query; // or req.params depending on how you send it
+    const { vendorId } = req.query;
 
     const matchStage = {
       payout: false,
@@ -251,15 +252,69 @@ const CreatePayout = async (req, res, next) => {
 
 const FetchPaidPayouts = async (req, res, next) => {
   try {
-    let response = await payoutmodal
-      .find()
-      .populate("vendorId")
-      .populate("payments");
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const filter = req.query.filter;
+
+    const dateFilter = {};
+    const now = moment();
+
+    // Date filtering
+    if (filter === "today") {
+      dateFilter.createdAt = {
+        $gte: now.clone().startOf("day").toDate(),
+        $lt: now.clone().endOf("day").toDate(),
+      };
+    } else if (filter === "week") {
+      dateFilter.createdAt = {
+        $gte: now.clone().startOf("week").toDate(),
+        $lt: now.clone().endOf("week").toDate(),
+      };
+    } else if (filter === "month") {
+      dateFilter.createdAt = {
+        $gte: now.clone().startOf("month").toDate(),
+        $lt: now.clone().endOf("month").toDate(),
+      };
+    } else if (filter === "year") {
+      dateFilter.createdAt = {
+        $gte: now.clone().startOf("year").toDate(),
+        $lt: now.clone().endOf("year").toDate(),
+      };
+    } else if (filter && !["today", "week", "month", "year"].includes(filter)) {
+      return next(
+        new AppErr(
+          "Invalid filter. Use 'today', 'week', 'month', or 'year'.",
+          400
+        )
+      );
+    }
+
+    const query = filter ? { ...dateFilter } : {};
+
+    // Fetch total count and paginated data
+    const [total, payouts] = await Promise.all([
+      payoutmodal.countDocuments(query),
+      payoutmodal
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate("vendorId")
+        .populate("payments"),
+    ]);
+
     return res.status(200).json({
       status: true,
       code: 200,
       message: "Payment fetched successfully",
-      data: response,
+      data: payouts,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     return next(new AppErr(error.message, 500));

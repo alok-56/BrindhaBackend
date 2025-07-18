@@ -55,30 +55,31 @@ const ApproveRejectProducts = async (req, res, next) => {
   try {
     const { productId } = req.body;
 
-    // Validate input
     if (!Array.isArray(productId) || productId.length === 0) {
       return next(new AppErr("No product data provided", 400));
     }
 
-    // Fetch all products in parallel
+    // Fetch all products
     const products = await Promise.all(
       productId.map((item) => ProductModel.findById(item.productId))
     );
 
-    // Check for missing products
     const missingProduct = products.find((p) => !p);
     if (missingProduct) {
       return next(new AppErr("One or more products not found", 404));
     }
 
-    // Update and save each product
+    // Update each product
     await Promise.all(
       products.map((product, index) => {
-        const { remarks, Commision } = productId[index];
+        const { remarks, Commision, status } = productId[index];
 
-        product.Status = "Approved";
+        if (!["Approved", "Rejected"].includes(status)) {
+          throw new Error("Invalid status provided");
+        }
 
-        // Add remark
+        product.Status = status;
+
         if (remarks) {
           if (!Array.isArray(product.Remarks)) {
             product.Remarks = [];
@@ -86,26 +87,29 @@ const ApproveRejectProducts = async (req, res, next) => {
           product.Remarks.push(remarks);
         }
 
-        product.Commision = Commision;
+        if (status === "Approved") {
+          product.Commision = Commision;
+        }
 
         return product.save();
       })
     );
 
+    // Add to email queue (can be customized further for each product)
     emailQueue.add({
       email: process.env.Email,
       subject: "ProductStatusUpdated",
       name: "",
       extraData: {
         productLink: "",
-        status: "",
+        status: "", // Optional: can loop and send status/product-specific emails
       },
     });
 
     return res.status(200).json({
       status: true,
       code: 200,
-      message: "Products approved with remarks and commission.",
+      message: "Products updated successfully with approval/rejection.",
     });
   } catch (error) {
     return next(new AppErr(error.message, 500));
@@ -138,13 +142,12 @@ const UpdateTagOfProduct = async (req, res, next) => {
 
     let product = await ProductModel.findById(ProductId);
 
-    
     if (empty) {
       product.Tags = [];
     } else {
       if (product.Tags.includes(tag)) {
-      return next(new AppErr(`${tag} already present for this product`));
-    }
+        return next(new AppErr(`${tag} already present for this product`));
+      }
 
       product.Tags.push(tag);
     }
