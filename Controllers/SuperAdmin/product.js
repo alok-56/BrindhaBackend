@@ -39,10 +39,10 @@ const FetchAllProduct = async (req, res, next) => {
       message: "Product Fetched Successfully",
       data: products,
       pagination: {
-        totalRecords: totalCount,
-        currentPage: page,
+        total: totalCount,
+        page: page,
+        limit: limit,
         totalPages: Math.ceil(totalCount / limit),
-        perPage: limit,
       },
     });
   } catch (error) {

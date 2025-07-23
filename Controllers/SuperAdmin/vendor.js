@@ -66,10 +66,11 @@ const GetVendorList = async (req, res, next) => {
       code: 200,
       data: vendors,
       pagination: {
-        totalRecords: totalVendors,
-        currentPage: page,
+        total: totalVendors,
+        page: page,
+          limit: limit,
         totalPages: Math.ceil(totalVendors / limit),
-        perPage: limit,
+      
       },
     });
   } catch (error) {

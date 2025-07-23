@@ -125,10 +125,10 @@ const FetchAllorderbySuper = async (req, res, next) => {
       message: "SubOrders with payments, user, and shipping details fetched successfully",
       data,
       pagination: {
-        totalRecords: total[0]?.total || 0,
-        currentPage: page,
+        total: total[0]?.total || 0,
+        page: page,
+        limit:limit,
         totalPages: Math.ceil((total[0]?.total || 0) / limit),
-        perPage: limit,
       },
     });
   } catch (error) {

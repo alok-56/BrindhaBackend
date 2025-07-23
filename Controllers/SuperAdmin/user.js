@@ -19,10 +19,11 @@ const FetchAllUserbySuper = async (req, res, next) => {
       message: "Users fetched successfully",
       data: users,
       pagination: {
-        totalRecords: total,
-        currentPage: page,
+        total: total,
+        page: page,
+         limit: limit,
         totalPages: Math.ceil(total / limit),
-        perPage: limit,
+       
       },
     });
   } catch (error) {
