@@ -4,6 +4,7 @@ const { generateToken } = require("../../Helper/generateToken");
 const UserModel = require("../../Models/User/user");
 const SendEmail = require("../../Helper/Email/sendEmail");
 const OtpModal = require("../../Models/User/otp");
+const VendorModel = require("../../Models/Vendor/vendor");
 
 // Create Super Admin
 const CreateUser = async (req, res, next) => {
@@ -211,12 +212,20 @@ const SendOtp = async (req, res, next) => {
       return next(new AppErr(err.errors[0].msg, 403));
     }
 
-    let { Email } = req.body;
+    let { Email, type = "user" } = req.body;
 
+    var email;
     // Check if user exists
-    let email = await UserModel.findOne({ Email: Email });
-    if (!email) {
-      return next(new AppErr("User Not Found", 400));
+    if (type === "user") {
+      email = await UserModel.findOne({ Email: Email });
+      if (!email) {
+        return next(new AppErr("User Not Found", 400));
+      }
+    } else {
+      email = await VendorModel.findOne({ Email: Email });
+      if (!email) {
+        return next(new AppErr("User Not Found", 400));
+      }
     }
 
     // Generate a random 5-digit OTP
@@ -270,22 +279,39 @@ const ForgetPassword = async (req, res, next) => {
       return next(new AppErr(err.errors[0].msg, 403));
     }
 
-    let { Email, Password } = req.body;
+    let { Email, Password, type = "user" } = req.body;
 
-    let email = await UserModel.findOne({
-      Email: Email,
-    });
-    if (!email) {
-      return next(new AppErr("User Not Found", 400));
+    if (type === "user") {
+      let email = await UserModel.findOne({
+        Email: Email,
+      });
+      if (!email) {
+        return next(new AppErr("User Not Found", 400));
+      }
+
+      const update = {};
+      if (Password) update.Password = Password;
+
+      // Create super admin
+      let User = await UserModel.findByIdAndUpdate(email._id, update, {
+        new: true,
+      });
+    } else {
+      let email = await VendorModel.findOne({
+        Email: Email,
+      });
+      if (!email) {
+        return next(new AppErr("User Not Found", 400));
+      }
+
+      const update = {};
+      if (Password) update.Password = Password;
+
+      // Create super admin
+      let User = await VendorModel.findByIdAndUpdate(email._id, update, {
+        new: true,
+      });
     }
-
-    const update = {};
-    if (Password) update.Password = Password;
-
-    // Create super admin
-    let User = await UserModel.findByIdAndUpdate(email._id, update, {
-      new: true,
-    });
 
     return res.status(200).json({
       status: true,

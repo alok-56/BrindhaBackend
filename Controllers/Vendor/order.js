@@ -221,7 +221,10 @@ const GetAllorder = async (req, res, next) => {
       };
     } else if (filter && !["today", "week", "month", "year"].includes(filter)) {
       return next(
-        new AppErr("Invalid filter. Use 'today', 'week', 'month', or 'year'.", 400)
+        new AppErr(
+          "Invalid filter. Use 'today', 'week', 'month', or 'year'.",
+          400
+        )
       );
     }
 
@@ -296,7 +299,6 @@ const GetAllorder = async (req, res, next) => {
     return next(new AppErr(error.message, 500));
   }
 };
-
 
 // Get Vendor Order Id
 const GetVendorOrderById = async (req, res, next) => {
@@ -541,23 +543,136 @@ const VendorsOrderCountApi = async (req, res, next) => {
 };
 
 // Vendor Earnings Stats - Week or Month filter only
+// const VendorEarningsStatsApi = async (req, res, next) => {
+//   try {
+//     const filter = req.query.filter;
+//     const vendorId = req.user;
+
+//     if (!filter || !["week", "month"].includes(filter)) {
+//       return next(new AppErr("Filter must be 'week' or 'month'", 400));
+//     }
+
+//     let groupField, labelMap, resultKey, formatLabel;
+
+//     if (filter === "week") {
+//       groupField = "$dayOfWeek";
+//       labelMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+//       resultKey = "day";
+//       formatLabel = (id) => labelMap[id - 1]; // dayOfWeek: 1 (Sun) to 7 (Sat)
+//     } else {
+//       groupField = "$month";
+//       labelMap = [
+//         "Jan",
+//         "Feb",
+//         "Mar",
+//         "Apr",
+//         "May",
+//         "Jun",
+//         "Jul",
+//         "Aug",
+//         "Sep",
+//         "Oct",
+//         "Nov",
+//         "Dec",
+//       ];
+//       resultKey = "month";
+//       formatLabel = (id) => labelMap[id - 1]; // month: 1 (Jan) to 12 (Dec)
+//     }
+
+//     const earningsAgg = await paymentmodal.aggregate([
+//       {
+//         $match: {
+//           vendorId,
+//           paymentStatus: "Completed",
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: { groupKey: { [groupField]: "$createdAt" } },
+//           totalAmount: { $sum: "$amount" },
+//         },
+//       },
+//       {
+//         $sort: { "_id.groupKey": 1 },
+//       },
+//     ]);
+
+//     const ordersAgg = await orderModal.aggregate([
+//       { $unwind: "$subOrders" },
+//       { $match: { "subOrders.vendorId": vendorId } },
+//       {
+//         $project: {
+//           groupKey: { [groupField]: "$createdAt" },
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: "$groupKey",
+//           count: { $sum: 1 },
+//         },
+//       },
+//       {
+//         $sort: { _id: 1 },
+//       },
+//     ]);
+
+//     // Initialize full range with 0s
+//     const combinedMap = {};
+//     labelMap.forEach((label) => {
+//       combinedMap[label] = { earning: 0, orders: 0 };
+//     });
+
+//     earningsAgg.forEach((e) => {
+//       const label = formatLabel(e._id.groupKey);
+//       combinedMap[label].earning = e.totalAmount;
+//     });
+
+//     ordersAgg.forEach((o) => {
+//       const label = formatLabel(o._id);
+//       combinedMap[label].orders = o.count;
+//     });
+
+//     const result = labelMap.map((label) => ({
+//       [resultKey]: label,
+//       earning: combinedMap[label].earning,
+//       orders: combinedMap[label].orders,
+//     }));
+
+//     return res.status(200).json({
+//       status: true,
+//       data: result,
+//       filter,
+//     });
+//   } catch (err) {
+//     return next(new AppErr(err.message, 500));
+//   }
+// };
+
 const VendorEarningsStatsApi = async (req, res, next) => {
   try {
     const filter = req.query.filter;
     const vendorId = req.user;
 
-    if (!filter || !["week", "month"].includes(filter)) {
-      return next(new AppErr("Filter must be 'week' or 'month'", 400));
+    if (!filter || !["week", "month", "year", "today"].includes(filter)) {
+      return next(
+        new AppErr("Filter must be 'week', 'month', 'year', or 'today'", 400)
+      );
     }
 
-    let groupField, labelMap, resultKey, formatLabel;
+    let groupField,
+      labelMap,
+      resultKey,
+      formatLabel,
+      dateMatch = {};
+
+    const now = new Date();
 
     if (filter === "week") {
       groupField = "$dayOfWeek";
       labelMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       resultKey = "day";
-      formatLabel = (id) => labelMap[id - 1]; // dayOfWeek: 1 (Sun) to 7 (Sat)
-    } else {
+      formatLabel = (id) => labelMap[id - 1];
+    } else if (filter === "month" || filter === "year") {
       groupField = "$month";
       labelMap = [
         "Jan",
@@ -574,7 +689,22 @@ const VendorEarningsStatsApi = async (req, res, next) => {
         "Dec",
       ];
       resultKey = "month";
-      formatLabel = (id) => labelMap[id - 1]; // month: 1 (Jan) to 12 (Dec)
+      formatLabel = (id) => labelMap[id - 1];
+
+      if (filter === "year") {
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+        const yearEnd = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+        dateMatch.createdAt = { $gte: yearStart, $lte: yearEnd };
+      }
+    } else if (filter === "today") {
+      groupField = "$hour";
+      labelMap = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+      resultKey = "hour";
+      formatLabel = (id) => `${id}:00`;
+
+      const start = new Date(now.setHours(0, 0, 0, 0));
+      const end = new Date(now.setHours(23, 59, 59, 999));
+      dateMatch.createdAt = { $gte: start, $lte: end };
     }
 
     const earningsAgg = await paymentmodal.aggregate([
@@ -582,6 +712,7 @@ const VendorEarningsStatsApi = async (req, res, next) => {
         $match: {
           vendorId,
           paymentStatus: "Completed",
+          ...dateMatch,
         },
       },
       {
@@ -590,14 +721,17 @@ const VendorEarningsStatsApi = async (req, res, next) => {
           totalAmount: { $sum: "$amount" },
         },
       },
-      {
-        $sort: { "_id.groupKey": 1 },
-      },
+      { $sort: { "_id.groupKey": 1 } },
     ]);
 
     const ordersAgg = await orderModal.aggregate([
       { $unwind: "$subOrders" },
-      { $match: { "subOrders.vendorId": vendorId } },
+      {
+        $match: {
+          "subOrders.vendorId": vendorId,
+          ...dateMatch,
+        },
+      },
       {
         $project: {
           groupKey: { [groupField]: "$createdAt" },
@@ -609,12 +743,9 @@ const VendorEarningsStatsApi = async (req, res, next) => {
           count: { $sum: 1 },
         },
       },
-      {
-        $sort: { _id: 1 },
-      },
+      { $sort: { _id: 1 } },
     ]);
 
-    // Initialize full range with 0s
     const combinedMap = {};
     labelMap.forEach((label) => {
       combinedMap[label] = { earning: 0, orders: 0 };
@@ -647,17 +778,99 @@ const VendorEarningsStatsApi = async (req, res, next) => {
 };
 
 // Vendor Order Stats - Week or Month filter only
+// const VendorOrderStatsApi = async (req, res, next) => {
+//   try {
+//     const filter = req.query.filter;
+//     const vendorId = req.user;
+
+//     if (!filter || !["week", "month"].includes(filter)) {
+//       return next(new AppErr("Filter must be 'week' or 'month'", 400));
+//     }
+
+//     const matchStage = {};
+//     let projectStage, groupStage, labelMap, formatLabel, resultKey;
+
+//     if (filter === "week") {
+//       projectStage = {
+//         day: { $dayOfWeek: "$createdAt" },
+//         "subOrders.vendorId": 1,
+//       };
+//       groupStage = { _id: "$day" };
+//       labelMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+//       resultKey = "day";
+//       formatLabel = (id) => labelMap[id - 1];
+//     } else {
+//       projectStage = {
+//         month: { $month: "$createdAt" },
+//         "subOrders.vendorId": 1,
+//       };
+//       groupStage = { _id: "$month" };
+//       labelMap = [
+//         "Jan",
+//         "Feb",
+//         "Mar",
+//         "Apr",
+//         "May",
+//         "Jun",
+//         "Jul",
+//         "Aug",
+//         "Sep",
+//         "Oct",
+//         "Nov",
+//         "Dec",
+//       ];
+//       resultKey = "month";
+//       formatLabel = (id) => labelMap[id - 1];
+//     }
+
+//     const orders = await orderModal.aggregate([
+//       { $match: matchStage },
+//       { $unwind: "$subOrders" },
+//       { $match: { "subOrders.vendorId": vendorId } },
+//       { $project: projectStage },
+//       { $group: { ...groupStage, count: { $sum: 1 } } },
+//       { $sort: { _id: 1 } },
+//     ]);
+
+//     const ordersMap = {};
+//     labelMap.forEach((label) => {
+//       ordersMap[label] = 0;
+//     });
+
+//     orders.forEach((o) => {
+//       const label = formatLabel(o._id);
+//       ordersMap[label] = o.count;
+//     });
+
+//     const formatted = labelMap.map((label) => ({
+//       [resultKey]: label,
+//       orders: ordersMap[label],
+//     }));
+
+//     return res.status(200).json({
+//       status: true,
+//       data: formatted,
+//       filter,
+//     });
+//   } catch (err) {
+//     return next(new AppErr(err.message, 500));
+//   }
+// };
+
 const VendorOrderStatsApi = async (req, res, next) => {
   try {
     const filter = req.query.filter;
     const vendorId = req.user;
 
-    if (!filter || !["week", "month"].includes(filter)) {
-      return next(new AppErr("Filter must be 'week' or 'month'", 400));
+    if (!filter || !["week", "month", "year", "today"].includes(filter)) {
+      return next(
+        new AppErr("Filter must be 'week', 'month', 'year', or 'today'", 400)
+      );
     }
 
-    const matchStage = {};
-    let projectStage, groupStage, labelMap, formatLabel, resultKey;
+    const now = new Date();
+    let matchStage = {};
+    let projectStage, groupStage, labelMap, resultKey, formatLabel;
 
     if (filter === "week") {
       projectStage = {
@@ -668,7 +881,7 @@ const VendorOrderStatsApi = async (req, res, next) => {
       labelMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       resultKey = "day";
       formatLabel = (id) => labelMap[id - 1];
-    } else {
+    } else if (filter === "month" || filter === "year") {
       projectStage = {
         month: { $month: "$createdAt" },
         "subOrders.vendorId": 1,
@@ -690,6 +903,25 @@ const VendorOrderStatsApi = async (req, res, next) => {
       ];
       resultKey = "month";
       formatLabel = (id) => labelMap[id - 1];
+
+      if (filter === "year") {
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+        const yearEnd = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+        matchStage.createdAt = { $gte: yearStart, $lte: yearEnd };
+      }
+    } else if (filter === "today") {
+      projectStage = {
+        hour: { $hour: "$createdAt" },
+        "subOrders.vendorId": 1,
+      };
+      groupStage = { _id: "$hour" };
+      labelMap = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+      resultKey = "hour";
+      formatLabel = (id) => `${id}:00`;
+
+      const start = new Date(now.setHours(0, 0, 0, 0));
+      const end = new Date(now.setHours(23, 59, 59, 999));
+      matchStage.createdAt = { $gte: start, $lte: end };
     }
 
     const orders = await orderModal.aggregate([
