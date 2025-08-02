@@ -14,6 +14,7 @@ const {
   FetchVendorOrderPayments,
   FetchVendorPaymentAndPayoutCounts,
 } = require("../Controllers/Vendor/payout");
+const { IsVendorVerified } = require("../Middleware/IsVendorverified");
 
 const PayoutRouter = express.Router();
 
@@ -29,15 +30,25 @@ PayoutRouter.get("/summary/payout", IsSuperAdmin, getPlatformFinanceSummary);
 
 // Vendor
 
-PayoutRouter.get("/fetch/vendor/payout", IsVendor, FetchVendorPayouts);
+PayoutRouter.get(
+  "/fetch/vendor/payout",
+  IsVendor,
+  IsVendorVerified,
+  FetchVendorPayouts
+);
 
 PayoutRouter.get(
   "/fetch/user/order/payment",
   IsVendor,
+  IsVendorVerified,
   FetchVendorOrderPayments
 );
 
-PayoutRouter.get("/fetch/vendor/payout/count", IsVendor, FetchVendorPaymentAndPayoutCounts);
-
+PayoutRouter.get(
+  "/fetch/vendor/payout/count",
+  IsVendor,
+  IsVendorVerified,
+  FetchVendorPaymentAndPayoutCounts
+);
 
 module.exports = PayoutRouter;

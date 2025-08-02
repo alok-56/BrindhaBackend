@@ -15,6 +15,14 @@ const CreateVendor = async (req, res, next) => {
 
     let { BussinessName, Vendorname, Email, Number, Password } = req.body;
     req.body.Isheadrole = true;
+    req.body.Permission = [
+      "Dashboard",
+      "Product management",
+      "Order Management",
+      "Earnings",
+      "Messages",
+      "Customer Reviews",
+    ];
     // Email Check
     let email = await VendorModel.findOne({ Email: Email });
     if (email) {
@@ -67,6 +75,30 @@ const LoginVendor = async (req, res, next) => {
       return next(new AppErr("invailed email or password", 400));
     }
 
+    const navItems = [
+      { label: "Dashboard", icon: "LayoutDashboard", path: "/" },
+      {
+        label: "Product management",
+        icon: "PackageSearch",
+        path: "/Product-management",
+      },
+      {
+        label: "Order Management",
+        icon: "PackageCheck",
+        path: "/Order-Management",
+      },
+      { label: "Earnings", icon: "ReceiptIndianRupee", path: "/earnings" },
+      { label: "Messages", icon: "Mail", path: "/messages" },
+      { label: "Customer Reviews", icon: "Users", path: "/customer-reviews" },
+    ];
+
+    // Permissions are expected to be strings matching navItems labels
+    const allowedLabels = vendor.Permission || [];
+
+    const filteredNavItems = navItems.filter((item) =>
+      allowedLabels.includes(item.label)
+    );
+
     // generate token
     let token = await generateToken(vendor._id);
 
@@ -75,6 +107,7 @@ const LoginVendor = async (req, res, next) => {
       code: 200,
       message: "Login Successfully",
       data: vendor,
+      navitems: filteredNavItems,
       token: token,
     });
   } catch (error) {
@@ -378,7 +411,7 @@ const UpdatePassword = async (req, res, next) => {
 // Update Vendor Profile
 const UpdateVendorProfile = async (req, res, next) => {
   try {
-    let { Vendorname, Email, Number } = req.body;
+    let { Vendorname, Email, Number, Permission } = req.body;
     let id = req.user;
 
     if (!id) {
@@ -413,6 +446,7 @@ const UpdateVendorProfile = async (req, res, next) => {
     if (Email) update.Email = Email;
     if (Number) update.Number = Number;
     if (Vendorname) update.Vendorname = Vendorname;
+    if (Permission) update.Permission = Permission;
 
     // Create super admin
     let vendor = await VendorModel.findByIdAndUpdate(id, update, {

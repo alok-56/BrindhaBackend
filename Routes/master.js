@@ -31,6 +31,11 @@ const {
 } = require("../Controllers/Master/subcateogies");
 const { IsUser } = require("../Middleware/IsUser");
 const { IsVendor } = require("../Middleware/IsVendor");
+const excelUpload = require("../Middleware/multerupload");
+const {
+  downloadMasterTemplate,
+  bulkUploadMasters,
+} = require("../Controllers/Vendor/bulkupload");
 
 const MasteradminRouter = express.Router();
 
@@ -111,7 +116,7 @@ MasteradminRouter.patch(
 MasteradminRouter.get("/get/cateogries", IsSuperAdmin, GetAllcateogries);
 
 // Get Cateogies by User
-MasteradminRouter.get("/users/get/cateogries", IsUser, GetAllcateogries);
+MasteradminRouter.get("/users/get/cateogries", GetAllcateogries);
 
 // Get Cateogies by vendor
 MasteradminRouter.get("/vendor/get/cateogries", IsVendor, GetAllsubcateogries);
@@ -159,6 +164,19 @@ MasteradminRouter.delete(
   "/delete/subcateogries/:id",
   IsSuperAdmin,
   Deletesubcateogries
+);
+
+// excel upload
+MasteradminRouter.post(
+  "/bulk/upload",
+  excelUpload.single("file"),
+  IsSuperAdmin,
+  bulkUploadMasters
+);
+
+MasteradminRouter.get(
+  "/download-template",
+  downloadMasterTemplate
 );
 
 module.exports = MasteradminRouter;

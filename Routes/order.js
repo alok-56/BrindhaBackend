@@ -25,6 +25,7 @@ const {
   GetOrderByOrderId,
 } = require("../Controllers/SuperAdmin/order");
 const { IsSuperAdmin } = require("../Middleware/IsSuperAdmin");
+const { IsVendorVerified } = require("../Middleware/IsVendorverified");
 const OrderRouter = express.Router();
 
 // Order create
@@ -64,32 +65,33 @@ OrderRouter.get("/get/cancel/order", IsUser, getCancelledOrders);
 // <!--------------------------VENDOR----------------------------->
 
 // Get All Order Of Vendor
-OrderRouter.get("/vendor/my/order", IsVendor, GetAllorder);
+OrderRouter.get("/vendor/my/order", IsVendor,IsVendorVerified, GetAllorder);
 
 // Get Order By OrderId
-OrderRouter.get("/vendor/order/:orderId", IsVendor, GetVendorOrderById);
+OrderRouter.get("/vendor/order/:orderId", IsVendor,IsVendorVerified, GetVendorOrderById);
 
 //Get Cancel order
-OrderRouter.get("/vendor/cancelorder", IsVendor, getCancelledOrdersofVendor);
+OrderRouter.get("/vendor/cancelorder", IsVendor,IsVendorVerified, getCancelledOrdersofVendor);
 
 // Update Status
 OrderRouter.patch(
   "/vendor/order/:orderId/status",
   IsVendor,
+  IsVendorVerified,
   UpdateOrderStatusByVendor
 );
 
 // Dashboard Count Api
-OrderRouter.get("/vendor/stats", IsVendor, GetVendorDashboardStats);
+OrderRouter.get("/vendor/stats", IsVendor,IsVendorVerified, GetVendorDashboardStats);
 
 // Order Dashboard count
-OrderRouter.get("/vendor/count/dashbaord", IsVendor, VendorsOrderCountApi);
+OrderRouter.get("/vendor/count/dashbaord", IsVendor,IsVendorVerified, VendorsOrderCountApi);
 
 // order graph
-OrderRouter.get("/vendor/stats/orders", IsVendor, VendorOrderStatsApi);
+OrderRouter.get("/vendor/stats/orders", IsVendor,IsVendorVerified, VendorOrderStatsApi);
 
 // earning graph
-OrderRouter.get("/vendor/stats/earnings", IsVendor, VendorEarningsStatsApi);
+OrderRouter.get("/vendor/stats/earnings", IsVendor,IsVendorVerified, VendorEarningsStatsApi);
 
 // <!--------------------------SUPER ADMIN----------------------------->
 

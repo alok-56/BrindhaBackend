@@ -23,7 +23,6 @@ const IsVendor = async (req, res, next) => {
       req.user = vendor._id;
       req.company = vendor.CompanyId;
     } else {
-      console.log(vendor.ReportAdmin)
       req.user = vendor.ReportAdmin;
       req.company = vendor.CompanyId;
     }

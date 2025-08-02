@@ -68,9 +68,8 @@ const GetVendorList = async (req, res, next) => {
       pagination: {
         total: totalVendors,
         page: page,
-          limit: limit,
+        limit: limit,
         totalPages: Math.ceil(totalVendors / limit),
-      
       },
     });
   } catch (error) {
@@ -156,7 +155,9 @@ const CountVendorsSummary = async (req, res, next) => {
     const [total, approved, pending, rejected] = await Promise.all([
       VendorModel.countDocuments(),
       VendorModel.countDocuments({ isCompanyVerified: "Approved" }),
-      VendorModel.countDocuments({ isCompanyVerified: "Requestsend" || "Pending" }),
+      VendorModel.countDocuments({
+        isCompanyVerified: "Requestsend" || "Pending",
+      }),
       VendorModel.countDocuments({ isCompanyVerified: "rejected" }),
     ]);
 

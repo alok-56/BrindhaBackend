@@ -40,7 +40,14 @@ const VendorSchema = new mongoose.Schema(
       type: String,
       required: true,
       default: "Pending",
-      enum: ["Pending", "Requestsend", "rejected", "Resend", "Approved"],
+      enum: [
+        "Pending",
+        "Requestsend",
+        "rejected",
+        "Resend",
+        "Approved",
+        "Blacklist",
+      ],
     },
     Permission: {
       type: [],

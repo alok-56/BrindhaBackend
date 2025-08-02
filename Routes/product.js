@@ -23,7 +23,16 @@ const {
   FetchAllUserProduct,
   FetchUserProductById,
 } = require("../Controllers/Users/products");
-const { AddOrUpdateWishlist, GetWishlistByUserId } = require("../Controllers/Users/wishlist");
+const {
+  AddOrUpdateWishlist,
+  GetWishlistByUserId,
+} = require("../Controllers/Users/wishlist");
+const {
+  BulkCreateProduct,
+  downloadTemplate,
+} = require("../Controllers/Vendor/bulkupload");
+const upload = require("../Middleware/fileUpload");
+const excelUpload = require("../Middleware/multerupload");
 const ProductRouter = express.Router();
 
 //Product add
@@ -107,11 +116,10 @@ ProductRouter.patch(
 );
 
 // Fecth All Products for Users
-ProductRouter.get("/users/get/products", IsUser, FetchAllUserProduct);
+ProductRouter.get("/users/get/products", FetchAllUserProduct);
 
 // Fetch Product by Id
-ProductRouter.get("/users/get/product/:id", IsUser, FetchUserProductById);
-
+ProductRouter.get("/users/get/product/:id", FetchUserProductById);
 
 // Update tags by superadmin
 ProductRouter.patch("/update/product/tags", IsSuperAdmin, UpdateTagOfProduct);
@@ -121,5 +129,21 @@ ProductRouter.patch("/wishlist/add", IsUser, AddOrUpdateWishlist);
 
 // Get Wishlst
 ProductRouter.get("/wishlist/get", IsUser, GetWishlistByUserId);
+
+//---------------Bulk Product Upload-----------------//
+ProductRouter.post(
+  "/bulk/upload",
+  excelUpload.single("file"),
+  IsVendor,
+  IsVendorVerified,
+  BulkCreateProduct
+);
+
+ProductRouter.get(
+  "/download-template",
+  IsVendor,
+  IsVendorVerified,
+  downloadTemplate
+);
 
 module.exports = ProductRouter;

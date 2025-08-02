@@ -1,6 +1,6 @@
 const { validationResult } = require("express-validator");
 const AppErr = require("../../Helper/appError");
-const TicketModal = require("../../Models/tickets");
+const TicketModal = require("../../Models/Tickets");
 
 // Create Ticket
 const CreateTicket = async (req, res, next) => {
@@ -39,7 +39,9 @@ const CreateTicket = async (req, res, next) => {
 // Get All My Ticket
 const GetMyTickets = async (req, res, next) => {
   try {
-    const tickets = await TicketModal.find({ UserId: req.user }).populate('UserId')
+    const tickets = await TicketModal.find({ UserId: req.user }).populate(
+      "UserId"
+    );
 
     res.status(200).json({
       status: true,
@@ -62,7 +64,7 @@ const GetAllTickets = async (req, res, next) => {
       filter.role = role;
     }
 
-    const tickets = await TicketModal.find(filter).populate('UserId')
+    const tickets = await TicketModal.find(filter).populate("UserId");
 
     res.status(200).json({
       status: true,
@@ -132,7 +134,7 @@ const PushMessageToTicket = async (req, res, next) => {
 const GetTicketById = async (req, res, next) => {
   try {
     let { id } = req.params;
-    const tickets = await TicketModal.findById(id)
+    const tickets = await TicketModal.findById(id);
 
     res.status(200).json({
       status: true,
