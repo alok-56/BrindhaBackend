@@ -1,6 +1,7 @@
 const { validationResult } = require("express-validator");
 const AppErr = require("../../Helper/appError");
-const TicketModal = require("../../Models/Tickets");
+const TicketModal = require("../../Models/tickets");
+
 
 // Create Ticket
 const CreateTicket = async (req, res, next) => {
