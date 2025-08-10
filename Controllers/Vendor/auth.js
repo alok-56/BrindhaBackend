@@ -147,7 +147,7 @@ const SendForverification = async (req, res, next) => {
         GstNumber,
         PanNumber,
         Bankdetails: { AccountholderName, BankName, Accountnumber, Ifsc },
-        Address: { State, City, Country, Place, Pincode },
+        Address: { State, City, Country, Place, Pincode, lat, lon },
         Documents: { AddressProof, AadharCard, Pincard, BankPassbook },
       } = req.body;
 
@@ -173,6 +173,8 @@ const SendForverification = async (req, res, next) => {
         AadharCard,
         Pincard,
         BankPassbook,
+        lat,
+        lon,
       };
       const missingFieldError = validateRequiredFields(requiredFields);
       if (missingFieldError) {
@@ -294,6 +296,8 @@ const SendForverification = async (req, res, next) => {
           ...(Address.Country && { Country: Address.Country }),
           ...(Address.Place && { Place: Address.Place }),
           ...(Address.Pincode && { Pincode: Address.Pincode }),
+          ...(Address.lat && { lat: Address.lat }),
+          ...(Address.lon && { lon: Address.lon }),
         };
       }
 

@@ -36,6 +36,8 @@ const CompanySchema = new mongoose.Schema(
       Country: String,
       Place: String,
       Pincode: Number,
+      lat: String,
+      lon: String,
     },
     Documents: {
       AddressProof: String,
@@ -63,7 +65,6 @@ const CompanySchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
 
 const CompanyModel = mongoose.model("Company", CompanySchema);
 module.exports = CompanyModel;
