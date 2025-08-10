@@ -17,7 +17,7 @@ const BulkCreateProduct = async (req, res, next) => {
     const data = XLSX.utils.sheet_to_json(sheet);
 
     const processedProducts = [];
-    console.log(data);
+    
 
     for (let item of data) {
       const {

@@ -26,6 +26,12 @@ const ShipingAddressSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    lat: {
+      type: String,
+    },
+    long: {
+      type: String,
+    },
   },
   {
     timestamps: true,

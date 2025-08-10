@@ -7,8 +7,8 @@ const SendEmail = async (email, type, userName, details) => {
 
   const companyFooter = `
     <div style="background:#2c3e50;color:white;padding:30px;text-align:center;margin-top:30px;">
-      <h3 style="margin:0 0 10px 0;font-size:24px;font-weight:300;">Brindha</h3>
-      <p style="margin:0 0 10px 0;color:#bdc3c7;font-size:14px;">www.brindha.com</p>
+      <h3 style="margin:0 0 10px 0;font-size:24px;font-weight:300;">Brindah</h3>
+      <p style="margin:0 0 10px 0;color:#bdc3c7;font-size:14px;">www.brindah.com</p>
       <p style="margin:0;color:#bdc3c7;font-size:14px;">Thank you for choosing us!</p>
     </div>
   `;

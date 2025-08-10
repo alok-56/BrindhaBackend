@@ -16,6 +16,7 @@ const OrderRouter = require("./Routes/order");
 const PayoutRouter = require("./Routes/payout");
 const TicketRouter = require("./Routes/tickets");
 const RatingRouter = require("./Routes/rating");
+const publicrouter = require("./Routes/contactus");
 require("dotenv").config();
 
 ConnectDatabase();
@@ -38,6 +39,7 @@ app.use("/api/v1/order", OrderRouter);
 app.use("/api/v1/payout", PayoutRouter);
 app.use("/api/v1/tickets", TicketRouter);
 app.use("/api/v1/rating", RatingRouter);
+app.use("/api/v1/public", publicrouter);
 
 // Not fount Route
 app.use("*", (req, res, next) => {

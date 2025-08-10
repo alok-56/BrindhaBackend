@@ -9,7 +9,7 @@ const CreateShippingAddress = async (req, res, next) => {
       return next(new AppErr(err.errors[0].msg, 403));
     }
 
-    const { FullAddress, Country, State, City, Pincode } = req.body;
+    const { FullAddress, Country, State, City, Pincode,lat,lon } = req.body;
     const UserId = req.user;
 
     const newAddress = await ShipingAddressSchemaModel.create({
@@ -19,6 +19,8 @@ const CreateShippingAddress = async (req, res, next) => {
       State,
       City,
       Pincode,
+      lat,
+      lon
     });
 
     res.status(200).json({
