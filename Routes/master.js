@@ -176,6 +176,7 @@ MasteradminRouter.post(
 
 MasteradminRouter.get(
   "/download-template",
+  IsSuperAdmin,
   downloadMasterTemplate
 );
 

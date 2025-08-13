@@ -104,6 +104,84 @@ const BulkCreateProduct = async (req, res, next) => {
   }
 };
 
+// const downloadTemplate = async (req, res, next) => {
+//   try {
+//     const categories = await CategoryModel.find()?.select("Categoryname");
+//     const subcategories = await SubcategoryModel.find()
+//       .populate("CategoryId", "Categoryname")
+//       .select("Subcategoryname CategoryId");
+//     const measurements = await MeasurementModel.find().select("measurement");
+
+//     const categoryNames = categories.map((c) => c.Categoryname).join(",");
+//     const subcategoryNames = subcategories
+//       .map((s) => `${s.Subcategoryname} (${s.CategoryId.Categoryname})`)
+//       .join(",");
+//     const measurementNames = measurements.map((m) => m.measurement).join(",");
+
+//     const workbook = new ExcelJS.Workbook();
+//     const worksheet = workbook.addWorksheet("Template");
+
+//     // Define headers
+//     worksheet.columns = [
+//       { header: "Category", key: "category" }, // A
+//       { header: "Subcategory", key: "subcategory" }, // B
+//       { header: "Measurement", key: "measurement" }, // C
+//       { header: "Name", key: "name" }, // D
+//       { header: "Description", key: "description" }, // E
+//       { header: "Features", key: "features" }, // F
+//       { header: "Colors", key: "colors" }, // G
+//       { header: "Stock", key: "stock" }, // H
+//       { header: "Images", key: "images" }, // I
+//       { header: "Yourprice", key: "yourprice" }, // J
+//       { header: "SellingPrice", key: "sellingprice" }, // K
+//       { header: "Ecofriendly", key: "ecofriendly" }, // L
+//     ];
+
+//     for (let i = 2; i <= 100; i++) {
+//       // Category dropdown in Column A
+//       worksheet.getCell(`A${i}`).dataValidation = {
+//         type: "list",
+//         allowBlank: true,
+//         formulae: [`"${categoryNames}"`],
+//       };
+
+//       // Subcategory (with category) dropdown in Column B
+//       worksheet.getCell(`B${i}`).dataValidation = {
+//         type: "list",
+//         allowBlank: true,
+//         formulae: [`"${subcategoryNames}"`],
+//       };
+
+//       // Measurement dropdown in Column C
+//       worksheet.getCell(`C${i}`).dataValidation = {
+//         type: "list",
+//         allowBlank: true,
+//         formulae: [`"${measurementNames}"`],
+//       };
+
+//       // Ecofriendly dropdown in Column L
+//       worksheet.getCell(`L${i}`).dataValidation = {
+//         type: "list",
+//         allowBlank: true,
+//         formulae: [`"Yes,No"`],
+//       };
+//     }
+
+//     // Save to file
+//     const uploadsDir = path.join(__dirname, "../../uploads");
+//     const filePath = path.join(uploadsDir, "ProductTemplate.xlsx");
+
+//     if (!fs.existsSync(uploadsDir)) {
+//       fs.mkdirSync(uploadsDir, { recursive: true });
+//     }
+
+//     await workbook.xlsx.writeFile(filePath);
+//     return res.download(filePath);
+//   } catch (err) {
+//     return next(new AppErr(err.message, 500));
+//   }
+// };
+
 const downloadTemplate = async (req, res, next) => {
   try {
     const categories = await CategoryModel.find().select("Categoryname");
@@ -112,54 +190,59 @@ const downloadTemplate = async (req, res, next) => {
       .select("Subcategoryname CategoryId");
     const measurements = await MeasurementModel.find().select("measurement");
 
-    const categoryNames = categories.map((c) => c.Categoryname).join(",");
-    const subcategoryNames = subcategories
-      .map((s) => `${s.Subcategoryname} (${s.CategoryId.Categoryname})`)
+    const categoryNames = categories
+      .filter(c => c?.Categoryname)
+      .map(c => c.Categoryname)
       .join(",");
-    const measurementNames = measurements.map((m) => m.measurement).join(",");
+
+    const subcategoryNames = subcategories
+      .map(s => {
+        const catName = s.CategoryId?.Categoryname || "No Category";
+        return `${s.Subcategoryname} (${catName})`;
+      })
+      .join(",");
+
+    const measurementNames = measurements
+      .filter(m => m?.measurement)
+      .map(m => m.measurement)
+      .join(",");
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Template");
 
     // Define headers
     worksheet.columns = [
-      { header: "Category", key: "category" }, // A
-      { header: "Subcategory", key: "subcategory" }, // B
-      { header: "Measurement", key: "measurement" }, // C
-      { header: "Name", key: "name" }, // D
-      { header: "Description", key: "description" }, // E
-      { header: "Features", key: "features" }, // F
-      { header: "Colors", key: "colors" }, // G
-      { header: "Stock", key: "stock" }, // H
-      { header: "Images", key: "images" }, // I
-      { header: "Yourprice", key: "yourprice" }, // J
-      { header: "SellingPrice", key: "sellingprice" }, // K
-      { header: "Ecofriendly", key: "ecofriendly" }, // L
+      { header: "Category", key: "category" },
+      { header: "Subcategory", key: "subcategory" },
+      { header: "Measurement", key: "measurement" },
+      { header: "Name", key: "name" },
+      { header: "Description", key: "description" },
+      { header: "Features", key: "features" },
+      { header: "Colors", key: "colors" },
+      { header: "Stock", key: "stock" },
+      { header: "Images", key: "images" },
+      { header: "Yourprice", key: "yourprice" },
+      { header: "SellingPrice", key: "sellingprice" },
+      { header: "Ecofriendly", key: "ecofriendly" },
     ];
 
+    // Add dropdowns
     for (let i = 2; i <= 100; i++) {
-      // Category dropdown in Column A
       worksheet.getCell(`A${i}`).dataValidation = {
         type: "list",
         allowBlank: true,
         formulae: [`"${categoryNames}"`],
       };
-
-      // Subcategory (with category) dropdown in Column B
       worksheet.getCell(`B${i}`).dataValidation = {
         type: "list",
         allowBlank: true,
         formulae: [`"${subcategoryNames}"`],
       };
-
-      // Measurement dropdown in Column C
       worksheet.getCell(`C${i}`).dataValidation = {
         type: "list",
         allowBlank: true,
         formulae: [`"${measurementNames}"`],
       };
-
-      // Ecofriendly dropdown in Column L
       worksheet.getCell(`L${i}`).dataValidation = {
         type: "list",
         allowBlank: true,
@@ -167,20 +250,23 @@ const downloadTemplate = async (req, res, next) => {
       };
     }
 
-    // Save to file
-    const uploadsDir = path.join(__dirname, "../../uploads");
-    const filePath = path.join(uploadsDir, "ProductTemplate.xlsx");
+    // ✅ Send file directly to client
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=ProductTemplate.xlsx"
+    );
 
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-
-    await workbook.xlsx.writeFile(filePath);
-    return res.download(filePath);
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (err) {
     return next(new AppErr(err.message, 500));
   }
 };
+
 
 const bulkUploadMasters = async (req, res, next) => {
   try {
@@ -253,6 +339,40 @@ const bulkUploadMasters = async (req, res, next) => {
   }
 };
 
+// const downloadMasterTemplate = async (req, res, next) => {
+//   try {
+//     const workbook = new ExcelJS.Workbook();
+//     const worksheet = workbook.addWorksheet("MasterTemplate");
+
+//     worksheet.columns = [
+//       { header: "Category", key: "category", width: 25 },
+//       { header: "Subcategory", key: "subcategory", width: 30 },
+//       { header: "Measurement", key: "measurement", width: 20 },
+//     ];
+
+//     for (let i = 2; i <= 100; i++) {
+//       worksheet.getCell(`A${i}`).dataValidation = {
+//         type: "textLength",
+//         operator: "greaterThan",
+//         formulae: [0],
+//         showErrorMessage: true,
+//         errorTitle: "Required",
+//         error: "Category cannot be empty",
+//       };
+//     }
+
+//     const filePath = path.join(__dirname, "../../uploads/MasterTemplate.xlsx");
+//     if (!fs.existsSync(path.dirname(filePath))) {
+//       fs.mkdirSync(path.dirname(filePath), { recursive: true });
+//     }
+
+//     await workbook.xlsx.writeFile(filePath);
+//     return res.download(filePath);
+//   } catch (err) {
+//     return next(new AppErr(err.message, 500));
+//   }
+// };
+
 const downloadMasterTemplate = async (req, res, next) => {
   try {
     const workbook = new ExcelJS.Workbook();
@@ -275,13 +395,19 @@ const downloadMasterTemplate = async (req, res, next) => {
       };
     }
 
-    const filePath = path.join(__dirname, "../../uploads/MasterTemplate.xlsx");
-    if (!fs.existsSync(path.dirname(filePath))) {
-      fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    }
+    // Set correct headers for Excel download
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=MasterTemplate.xlsx"
+    );
 
-    await workbook.xlsx.writeFile(filePath);
-    return res.download(filePath);
+    // Stream directly to response
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (err) {
     return next(new AppErr(err.message, 500));
   }

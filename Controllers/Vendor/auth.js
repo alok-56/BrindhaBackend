@@ -156,7 +156,7 @@ const SendForverification = async (req, res, next) => {
         BussinessName,
         BussinessEmail,
         BussinessNumber,
-        BussinessWebsite,
+        // BussinessWebsite,
         Bussinesstype,
         GstNumber,
         PanNumber,
