@@ -94,7 +94,16 @@ const FetchUserProductById = async (req, res, next) => {
   try {
     let { id } = req.params;
 
-    let product = await ProductModel.findById(id);
+    let product = await ProductModel.findById(id)
+      .populate({
+        path: "VendorId",
+        populate: {
+          path: "CompanyId",
+          model: "Company",
+          select: "Address chargeperkm",
+        },
+      })
+      .populate("Measturments");
     return res.status(200).json({
       status: true,
       code: 200,
