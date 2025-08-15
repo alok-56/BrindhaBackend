@@ -39,6 +39,9 @@ const CompanySchema = new mongoose.Schema(
       lat: String,
       lon: String,
     },
+    chargeperkm: {
+      type: String,
+    },
     Documents: {
       AddressProof: String,
       AadharCard: String,

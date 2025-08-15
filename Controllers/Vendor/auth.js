@@ -146,6 +146,7 @@ const SendForverification = async (req, res, next) => {
         Bussinesstype,
         GstNumber,
         PanNumber,
+        chargeperkm,
         Bankdetails: { AccountholderName, BankName, Accountnumber, Ifsc },
         Address: { State, City, Country, Place, Pincode, lat, lon },
         Documents: { AddressProof, AadharCard, Pincard, BankPassbook },
@@ -175,6 +176,7 @@ const SendForverification = async (req, res, next) => {
         BankPassbook,
         lat,
         lon,
+        chargeperkm
       };
       const missingFieldError = validateRequiredFields(requiredFields);
       if (missingFieldError) {
@@ -239,6 +241,7 @@ const SendForverification = async (req, res, next) => {
         Bankdetails,
         Address,
         Documents,
+        chargeperkm
       } = req.body;
 
       // Check if email exists in another company
@@ -275,6 +278,7 @@ const SendForverification = async (req, res, next) => {
       if (Bussinesstype) updatedFields.Bussinesstype = Bussinesstype;
       if (GstNumber) updatedFields.GstNumber = GstNumber;
       if (PanNumber) updatedFields.PanNumber = PanNumber;
+       if (chargeperkm) updatedFields.chargeperkm = chargeperkm;
 
       if (Bankdetails) {
         updatedFields.Bankdetails = {
@@ -300,6 +304,7 @@ const SendForverification = async (req, res, next) => {
           ...(Address.lon && { lon: Address.lon }),
         };
       }
+      
 
       if (Documents) {
         updatedFields.Documents = {
