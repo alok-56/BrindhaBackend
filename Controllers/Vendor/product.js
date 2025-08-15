@@ -4,7 +4,7 @@ const CategoryModel = require("../../Models/Master/category");
 const MeasurementModel = require("../../Models/Master/measurement");
 const ProductModel = require("../../Models/Product/product");
 const SubcategoryModel = require("../../Models/Master/subcategory");
-const emailQueue = require("../../Helper/Email/emailjobs");
+const SendEmail = require("../../Helper/Email/sendEmail");
 
 // Add Product
 const CreateProduct = async (req, res, next) => {
@@ -52,7 +52,6 @@ const CreateProduct = async (req, res, next) => {
   }
 };
 
-
 // Send Product For Verification
 const SendProductForVerification = async (req, res, next) => {
   try {
@@ -82,17 +81,18 @@ const SendProductForVerification = async (req, res, next) => {
       })
     );
 
-    emailQueue.add({
-      email: process.env.Email,
-      subject: "ProductAdded",
-      name: "",
-      extraData: {},
-    });
-
-    return res.status(200).json({
+    res.status(200).json({
       status: true,
       code: 200,
       message: "Product Send For Approval",
+    });
+
+    setImmediate(async () => {
+      try {
+        await SendEmail(process.env.Email, "ProductAdded", "", {});
+      } catch (emailErr) {
+        console.error("Email sending failed:", emailErr.message);
+      }
     });
   } catch (error) {
     return next(new AppErr(error.message, 500));

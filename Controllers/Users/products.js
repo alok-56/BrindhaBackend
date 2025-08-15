@@ -18,8 +18,6 @@ const FetchAllUserProduct = async (req, res, next) => {
       color,
     } = req.query;
 
-    console.log(color)
-
     page = parseInt(page);
     limit = parseInt(limit);
 
@@ -60,7 +58,14 @@ const FetchAllUserProduct = async (req, res, next) => {
     }
 
     const products = await ProductModel.find(query)
-      .populate("VendorId")
+      .populate({
+        path: "VendorId",
+        populate: {
+          path: "CompanyId",
+          model: "Company",
+          select: "Address chargeperkm",
+        },
+      })
       .populate("Measturments")
       .skip((page - 1) * limit)
       .limit(limit);

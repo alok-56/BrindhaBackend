@@ -5,7 +5,7 @@ const VendorModel = require("../../Models/Vendor/vendor");
 const paymentmodal = require("../../Models/Order/payment");
 const ProductModel = require("../../Models/Product/product");
 const orderModal = require("../../Models/Order/order");
-const emailQueue = require("../../Helper/Email/emailjobs");
+const SendEmail = require("../../Helper/Email/sendEmail");
 
 // Get Vendor List with filter
 const GetVendorList = async (req, res, next) => {
@@ -123,27 +123,39 @@ const ApproveRejectvendor = async (req, res, next) => {
       });
     }
 
-    if (status === "Approved") {
-      emailQueue.add({
-        email: vendor.Email,
-        subject: "VendorApproved",
-        name: vendor.BussinessName,
-        extraData: {},
-      });
-    } else {
-      emailQueue.add({
-        email: vendor.Email,
-        subject: "VendorRejected",
-        name: vendor.BussinessName,
-        extraData: {},
-      });
-    }
-
-    return res.status(200).json({
+    res.status(200).json({
       status: true,
       code: 200,
       message: "Status Updated successfully",
     });
+
+    if (status === "Approved") {
+     setImmediate(async () => {
+        try {
+          await SendEmail(
+            vendor.Email,
+            "VendorApproved",
+            vendor.BussinessName,
+            {}
+          );
+        } catch (emailErr) {
+          console.error("Email sending failed:", emailErr.message);
+        }
+      });
+    } else {
+     setImmediate(async () => {
+        try {
+          await SendEmail(
+            vendor.Email,
+            "VendorRejected",
+            vendor.BussinessName,
+            {}
+          );
+        } catch (emailErr) {
+          console.error("Email sending failed:", emailErr.message);
+        }
+      });
+    }
   } catch (error) {
     return next(new AppErr(error.message), 500);
   }

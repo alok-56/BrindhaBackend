@@ -7,6 +7,7 @@ const VendorModel = require("../../Models/Vendor/vendor");
 const payoutmodal = require("../../Models/Order/payout");
 const paymentmodal = require("../../Models/Order/payment");
 const moment = require("moment");
+const sendVendorPayout = require("../../Helper/payoutapi");
 require("dotenv").config();
 
 // Initialize Razorpay instance
@@ -181,54 +182,13 @@ const CreatePayout = async (req, res, next) => {
       return next(new AppErr("Vendor bank details missing", 400));
     }
 
-    // const authHeader = `Basic ${Buffer.from(
-    //   `${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`
-    // ).toString("base64")}`;
-
-    // // 1. Create Fund Account on RazorpayX
-    // const fundAccountPayload = {
-    //   account_type: "bank_account",
-    //   bank_account: {
-    //     name: vendor.CompanyId.Bankdetails.AccountHolderName,
-    //     ifsc: vendor.CompanyId.Bankdetails.Ifsc,
-    //     account_number: vendor.CompanyId.Bankdetails.Accountnumber,
-    //   },
-    //   contact: {
-    //     name: vendor.Vendorname,
-    //     email: vendor.Email,
-    //     contact: vendor.Number,
-    //   },
-    // };
-
-    // const fundAccountResponse = await axios.post(
-    //   "https://api.razorpay.com/v1/fund_accounts",
-    //   fundAccountPayload,
-    //   { headers: { Authorization: authHeader } }
-    // );
-
-    // // 2. Create Payout using fund_account_id and correct amount
-    // const payoutPayload = {
-    //   fund_account_id: fundAccountResponse.data.id,
-    //   amount: amountInPaise, // in paise
-    //   currency: "INR",
-    //   mode: "IMPS",
-    //   purpose: "payout",
-    //   queue_if_low_balance: true,
-    // };
-
-    // const payoutResponse = await axios.post(
-    //   "https://api.razorpay.com/v1/payouts",
-    //   payoutPayload,
-    //   { headers: { Authorization: authHeader } }
-    // );
-
     // 3. Create payout record in DB (store amount in rupees)
     const payoutRecord = await payoutmodal.create({
       vendorId,
-      razorpayPayoutId: "testid1234",
+      razorpayPayoutId: "Na",
       totalAmount: totalAmount,
       payments: paymentIds,
-      status: "Pending",
+      status: "Paid",
     });
 
     // 4. Update payments as paid out

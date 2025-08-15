@@ -1,5 +1,5 @@
 const AppErr = require("../../Helper/appError");
-const emailQueue = require("../../Helper/Email/emailjobs");
+const SendEmail = require("../../Helper/Email/sendEmail");
 const ProductModel = require("../../Models/Product/product");
 
 // Get All Product Based on Vendor
@@ -96,20 +96,22 @@ const ApproveRejectProducts = async (req, res, next) => {
     );
 
     // Add to email queue (can be customized further for each product)
-    emailQueue.add({
-      email: process.env.Email,
-      subject: "ProductStatusUpdated",
-      name: "",
-      extraData: {
-        productLink: "",
-        status: "", // Optional: can loop and send status/product-specific emails
-      },
-    });
 
-    return res.status(200).json({
+    res.status(200).json({
       status: true,
       code: 200,
       message: "Products updated successfully with approval/rejection.",
+    });
+
+    setImmediate(async () => {
+      try {
+        await SendEmail(process.env.Email, "ProductStatusUpdated", "", {
+          productLink: "",
+          status: "",
+        });
+      } catch (emailErr) {
+        console.error("Email sending failed:", emailErr.message);
+      }
     });
   } catch (error) {
     return next(new AppErr(error.message, 500));

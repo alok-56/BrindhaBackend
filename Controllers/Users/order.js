@@ -9,7 +9,6 @@ const ReturnModal = require("../../Models/Order/return");
 const UserModel = require("../../Models/User/user");
 const SendEmail = require("../../Helper/Email/sendEmail");
 const VendorModel = require("../../Models/Vendor/vendor");
-const emailQueue = require("../../Helper/Email/emailjobs");
 const notificationModal = require("../../Models/notification");
 require("dotenv").config();
 
@@ -75,11 +74,12 @@ const saveMultiVendorOrder = async (
 
     let vendor = await VendorModel.findById(sub.vendorId);
 
-    emailQueue.add({
-      email: vendor.Email,
-      subject: "OrderCreatedVendor",
-      name: "",
-      orderData,
+   setImmediate(async () => {
+      try {
+        await SendEmail(vendor.Email, "OrderCreatedVendor", "", orderData);
+      } catch (emailErr) {
+        console.error("Email sending failed:", emailErr.message);
+      }
     });
 
     // Prepare bulk operations for product stock updates
@@ -193,17 +193,20 @@ const VerifyOrder = async (req, res, next) => {
 
       let user = await UserModel.findById(orderData.userId).select("Email");
 
-      emailQueue.add({
-        email: user.Email,
-        subject: "OrderCreatedUser",
-        name: "",
-        extraData: orderData,
-      });
-
-      return res.status(200).json({
+      res.status(200).json({
         status: true,
         message: "order verified successfully",
         data: savedOrder,
+      });
+
+     setImmediate(async () => {
+        try {
+          await SendEmail(user.Email, "OrderCreatedUser", "", {
+            orderData,
+          });
+        } catch (emailErr) {
+          console.error("Email sending failed:", emailErr.message);
+        }
       });
     } else {
       return res
@@ -413,22 +416,23 @@ const CreateCancelorder = async (req, res, next) => {
 
     let user = await UserModel.findById(order.userId).select("Email");
 
-    emailQueue.add({
-      email: user.Email,
-      subject: "OrderCancelled",
-      name: "",
-      extraData: {
-        orderId: orderid.slice(0, 8),
-        RefundAmount: refundAmount,
-        refundid: refundData?.id,
-      },
-    });
-
-    return res.status(200).json({
+    res.status(200).json({
       status: true,
       message: "Order cancelled and refund initiated",
       data: refundData,
       refundrecord: returnRecord,
+    });
+
+   setImmediate(async () => {
+      try {
+        await SendEmail(user.Email, "OrderCancelled", "", {
+          orderId: orderid.slice(0, 8),
+          RefundAmount: refundAmount,
+          refundid: refundData?.id,
+        });
+      } catch (emailErr) {
+        console.error("Email sending failed:", emailErr.message);
+      }
     });
   } catch (error) {
     console.error("Cancel Order Error:", error);

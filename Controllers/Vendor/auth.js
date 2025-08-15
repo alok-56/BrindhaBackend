@@ -3,7 +3,8 @@ const AppErr = require("../../Helper/appError");
 const CompanyModel = require("../../Models/Vendor/companydetails");
 const VendorModel = require("../../Models/Vendor/vendor");
 const { generateToken } = require("../../Helper/generateToken");
-const emailQueue = require("../../Helper/Email/emailjobs");
+
+const SendEmail = require("../../Helper/Email/sendEmail");
 
 // Create Vendor
 const CreateVendor = async (req, res, next) => {
@@ -38,18 +39,19 @@ const CreateVendor = async (req, res, next) => {
     // Create vendor
     let vendor = await VendorModel.create(req.body);
 
-    emailQueue.add({
-      email: Email,
-      subject: "Welcomevendor",
-      name: Vendorname,
-      extraData: {},
-    });
-
-    return res.status(200).json({
+    res.status(200).json({
       status: true,
       code: 200,
       message: "Vendor Created Successfully",
       data: vendor,
+    });
+
+   setImmediate(async () => {
+      try {
+        await SendEmail(Email, "Welcomevendor", Vendorname, {});
+      } catch (emailErr) {
+        console.error("Email sending failed:", emailErr.message);
+      }
     });
   } catch (error) {
     return next(new AppErr(error.message, 500));
@@ -176,7 +178,7 @@ const SendForverification = async (req, res, next) => {
         BankPassbook,
         lat,
         lon,
-        chargeperkm
+        chargeperkm,
       };
       const missingFieldError = validateRequiredFields(requiredFields);
       if (missingFieldError) {
@@ -210,24 +212,31 @@ const SendForverification = async (req, res, next) => {
       vendor.CompanyId = company._id;
       await vendor.save();
 
-      emailQueue.add({
-        email: process.env.Email,
-        subject: "VendorRegisterednew",
-        name: BussinessName,
-        extraData: {},
+     setImmediate(async () => {
+        try {
+          await SendEmail(
+            process.env.Email,
+            "VendorRegisterednew",
+            BussinessName,
+            {}
+          );
+        } catch (emailErr) {
+          console.error("Email sending failed:", emailErr.message);
+        }
       });
 
-      emailQueue.add({
-        email: vendor.Email,
-        subject: "VendorRegistered",
-        name: BussinessName,
-        extraData: {},
-      });
-
-      return res.status(200).json({
+      res.status(200).json({
         status: true,
         code: 200,
         message: "Successfully send for verification",
+      });
+
+     setImmediate(async () => {
+        try {
+          await SendEmail(vendor.Email, "VendorRegistered", BussinessName, {});
+        } catch (emailErr) {
+          console.error("Email sending failed:", emailErr.message);
+        }
       });
     } else {
       let {
@@ -241,7 +250,7 @@ const SendForverification = async (req, res, next) => {
         Bankdetails,
         Address,
         Documents,
-        chargeperkm
+        chargeperkm,
       } = req.body;
 
       // Check if email exists in another company
@@ -278,7 +287,7 @@ const SendForverification = async (req, res, next) => {
       if (Bussinesstype) updatedFields.Bussinesstype = Bussinesstype;
       if (GstNumber) updatedFields.GstNumber = GstNumber;
       if (PanNumber) updatedFields.PanNumber = PanNumber;
-       if (chargeperkm) updatedFields.chargeperkm = chargeperkm;
+      if (chargeperkm) updatedFields.chargeperkm = chargeperkm;
 
       if (Bankdetails) {
         updatedFields.Bankdetails = {
@@ -304,7 +313,6 @@ const SendForverification = async (req, res, next) => {
           ...(Address.lon && { lon: Address.lon }),
         };
       }
-      
 
       if (Documents) {
         updatedFields.Documents = {
