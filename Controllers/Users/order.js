@@ -374,7 +374,7 @@ const CreateCancelorder = async (req, res, next) => {
     if (order.paymentMode === "ONLINE" && order.paymentStatus === "Completed") {
       try {
         refundData = await razorpay.payments.refund(order.razorpayPaymentId, {
-          amount: Math.round(refundAmount * 100), // paise
+          amount: Math.round(refundAmount * 100), 
           notes: {
             orderId: order._id.toString(),
             vendorId: vendorid,
